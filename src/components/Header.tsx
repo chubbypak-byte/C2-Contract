@@ -7,6 +7,7 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   onSimulateEvent: () => void;
   isSimulating: boolean;
+  onGoHome?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onSimulateEvent,
   isSimulating,
+  onGoHome,
 }) => {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -21,14 +23,28 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Zone 1: Single Brand element */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white shadow-sm shadow-sky-200">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+          {/* Zone 1: Single Brand element with clickable lightning icon to return to home */}
+          <div
+            onClick={onGoHome}
+            className={`flex items-center gap-3 select-none ${
+              onGoHome ? 'cursor-pointer group' : ''
+            }`}
+            title="กดรูปสายฟ้าหรือโลโก้เพื่อกลับหน้าหลัก"
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onGoHome?.();
+              }}
+              className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-400 hover:from-sky-600 hover:to-cyan-500 active:scale-95 flex items-center justify-center text-white shadow-sm shadow-sky-200 transition-all duration-150 cursor-pointer group-hover:ring-2 group-hover:ring-sky-400 group-hover:ring-offset-2"
+              title="กดรูปสายฟ้าเพื่อกลับหน้าหลักทันที"
+            >
+              <Zap className="w-5 h-5 text-white transition-transform duration-200 group-hover:scale-110" />
+            </button>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold tracking-tight text-slate-900">
+                <span className="text-lg font-bold tracking-tight text-slate-900 group-hover:text-sky-600 transition-colors">
                   ระบบจัดเก็บและติดตามสัญญาซื้อขายไฟฟ้า
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-sky-700 bg-sky-50 border border-sky-200 rounded-md">

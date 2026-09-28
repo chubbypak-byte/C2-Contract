@@ -167,6 +167,88 @@ export default function App() {
     });
   };
 
+  // Handler: Confirm contract verification from verification page (Left: Details, Right: Document)
+  const handleConfirmVerification = (
+    consumerId: string,
+    verifiedFiles: AttachedFile[],
+    reviewNotes: string,
+    reviewerName: string
+  ) => {
+    setConsumers((prev) =>
+      prev.map((c) => {
+        if (c.id === consumerId) {
+          const updatedDetails: ContractDetails = {
+            ...c.contractDetails,
+            contractNumber: c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
+            contractType: c.contractDetails?.contractType || 'สัญญาซื้อขายไฟฟ้าทั่วไป',
+            contractDate: c.contractDetails?.contractDate || '2026-01-15',
+            effectiveDate: c.contractDetails?.effectiveDate || '2026-02-01',
+            expireDate: c.contractDetails?.expireDate || '2031-01-31',
+            capacityKW: c.contractDetails?.capacityKW || 1500,
+            securityDeposit: c.contractDetails?.securityDeposit || 1000000,
+            signingAuthority: c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
+            reviewedBy: reviewerName,
+            reviewedAt: new Date().toLocaleString('th-TH'),
+            reviewNotes,
+            files: verifiedFiles,
+          };
+
+          return {
+            ...c,
+            contractDetails: updatedDetails,
+            contractStatus: 'completed' as ContractStatus,
+            attachedFilesCount: verifiedFiles.length,
+            verifiedFilesCount: verifiedFiles.length,
+            updatedAt: new Date().toLocaleString('th-TH'),
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = consumers.find((c) => c.id === consumerId);
+
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: 'อนุมัติและรับรองสัญญาเรียบร้อย',
+      message: `สัญญาซื้อขายไฟฟ้าของ ${target?.consumerName || target?.location.split(' ')[0]} ตรวจสอบและรับรองสำเร็จแล้ว`,
+      type: 'success',
+      timestamp: 'เมื่อสักครู่',
+      consumerId,
+      accountNumber: target?.accountNumber,
+      isRead: false,
+      statusChange: 'completed',
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    setToast({
+      id: `toast-${Date.now()}`,
+      title: 'รับรองสัญญาสำเร็จ',
+      message: `ตรวจสอบและรับรองสัญญาซื้อขายไฟฟ้าเรียบร้อยแล้ว สถานะเปลี่ยนเป็น เสร็จสิ้น`,
+      type: 'success',
+    });
+  };
+
+  // Handler: Return to home page (กดรูปสายฟ้า ให้กลับหน้าหลักทุกครั้ง)
+  const handleGoHome = () => {
+    setSelectedForVerification(null);
+    setSelectedForUpload(null);
+    setSelectedForView(null);
+    setIsAddModalOpen(false);
+    setIsNotificationOpen(false);
+    setActiveTab('ทั้งหมด');
+    setSearchQuery('');
+    setSelectedUtility('all');
+    setSelectedVoltage('all');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setToast({
+      id: `toast-${Date.now()}`,
+      title: 'กลับสู่หน้าหลัก',
+      message: 'รีเซ็ตตัวกรองและกลับสู่หน้าหลักเรียบร้อย',
+      type: 'info',
+    });
+  };
+
   // Handler: Real-time simulation event
   const handleSimulateRealtimeEvent = () => {
     setIsSimulating(true);
@@ -303,12 +385,13 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-['Prompt','Plus_Jakarta_Sans',sans-serif]">
-      {/* 1. Header with 3-zone Top Bar Contract */}
+      {/* 1. Header with 3-zone Top Bar Contract and lightning home action */}
       <Header
         notifications={notifications}
         onOpenNotifications={() => setIsNotificationOpen(true)}
         onSimulateEvent={handleSimulateRealtimeEvent}
         isSimulating={isSimulating}
+        onGoHome={handleGoHome}
       />
 
       {/* Main Content Viewport */}
@@ -373,6 +456,7 @@ export default function App() {
             onOpenUploadModal={(consumer) => setSelectedForUpload(consumer)}
             onOpenAddModal={() => setIsAddModalOpen(true)}
             onViewContract={(consumer) => setSelectedForView(consumer)}
+            onVerifyContract={(consumer) => setSelectedForVerification(consumer)}
           />
         </section>
       </main>
@@ -415,6 +499,18 @@ export default function App() {
           setSelectedForView(null);
           setSelectedForUpload(consumer);
         }}
+        onVerifyContract={(consumer) => {
+          setSelectedForView(null);
+          setSelectedForVerification(consumer);
+        }}
+      />
+
+      {/* NEW: หน้าตรวจสอบสัญญาซื้อขายไฟฟ้า (แบบแยก 2 ฝั่ง ซ้าย: รายละเอียดสัญญา / ขวา: หน้าสัญญาซื้อขายไฟฟ้า) */}
+      <ContractVerificationPage
+        consumer={selectedForVerification}
+        isOpen={Boolean(selectedForVerification)}
+        onClose={() => setSelectedForVerification(null)}
+        onConfirmVerification={handleConfirmVerification}
       />
 
       <NotificationDrawer
