@@ -1,0 +1,6 @@
+{
+  "name": "ระบบจัดเก็บและติดตามสัญญาซื้อขายไฟฟ้า",
+  "description": "ระบบจัดเก็บสัญญาซื้อขายไฟฟ้า ค้นหาข้อมูลผู้ใช้ไฟฟ้า และแจ้งเตือนสถานะเอกสารสัญญาแบบเรียลไทม์",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
