@@ -6,6 +6,8 @@ export function getStatusLabel(status: ContractStatus): string {
       return 'แนบไฟล์แล้ว';
     case 'pending_review':
       return 'รอตรวจสอบไฟล์สัญญา';
+    case 'needs_revision':
+      return 'รอแก้ไขข้อมูล';
     case 'completed':
       return 'เสร็จสิ้น';
     case 'pending_upload':
@@ -34,6 +36,13 @@ export function getStatusStyle(status: ContractStatus): {
         dotColor: 'bg-amber-500',
         textColor: 'text-amber-700',
         borderColor: 'border-amber-200',
+      };
+    case 'needs_revision':
+      return {
+        badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
+        dotColor: 'bg-rose-500',
+        textColor: 'text-rose-700',
+        borderColor: 'border-rose-200',
       };
     case 'completed':
       return {

@@ -8,6 +8,8 @@ interface SearchBarProps {
   onUtilityChange: (utility: string) => void;
   selectedVoltage: string;
   onVoltageChange: (voltage: string) => void;
+  selectedAuthority: string;
+  onAuthorityChange: (authority: string) => void;
   onExport: () => void;
   onReset: () => void;
   filteredCount: number;
@@ -21,12 +23,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onUtilityChange,
   selectedVoltage,
   onVoltageChange,
+  selectedAuthority,
+  onAuthorityChange,
   onExport,
   onReset,
   filteredCount,
   totalCount,
 }) => {
-  const isFiltered = searchQuery !== '' || selectedUtility !== 'all' || selectedVoltage !== 'all';
+  const isFiltered =
+    searchQuery !== '' ||
+    selectedUtility !== 'all' ||
+    selectedVoltage !== 'all' ||
+    selectedAuthority !== 'all';
 
   return (
     <div className="bg-white p-4 rounded-2xl border border-sky-100 shadow-2xs space-y-3">
@@ -83,6 +91,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               <option value="all">แรงดัน: ทุกระดับ</option>
               <option value="22-33 kV">22-33 kV</option>
               <option value="115 kV">115 kV</option>
+            </select>
+          </div>
+
+          {/* Authority Filter: ผจก. อฝ.สบ หรือ ผชก. */}
+          <div className="flex items-center gap-1.5 bg-purple-50/70 border border-purple-200 rounded-xl px-2.5 py-1.5">
+            <span className="text-[11px] font-bold text-purple-800">อำนาจ:</span>
+            <select
+              value={selectedAuthority}
+              onChange={(e) => onAuthorityChange(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-purple-900 outline-none cursor-pointer"
+            >
+              <option value="all">ทั้งหมด (ผจก./อฝ.สบ./ผชก.)</option>
+              <option value="ผจก.">ผจก. (ผู้จัดการ)</option>
+              <option value="อฝ.สบ.">อฝ.สบ. (ผู้อำนวยการฝ่าย)</option>
+              <option value="ผชก.">ผชก. (ผู้ช่วยผู้ว่าการ)</option>
             </select>
           </div>
 

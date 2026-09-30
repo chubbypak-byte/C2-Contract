@@ -39,6 +39,11 @@ interface ContractVerificationPageProps {
     reviewNotes: string,
     reviewerName: string
   ) => void;
+  onRejectVerification?: (
+    consumerId: string,
+    reviewNotes: string,
+    reviewerName: string
+  ) => void;
   onOpenUploadModal?: (consumer: ElectricityConsumer) => void;
 }
 
@@ -47,6 +52,7 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
   isOpen,
   onClose,
   onConfirmVerification,
+  onRejectVerification,
   onOpenUploadModal,
 }) => {
   if (!isOpen || !consumer) return null;
@@ -76,13 +82,16 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [fileList, setFileList] = useState<AttachedFile[]>(initialFiles);
+  // ข้อ 10: ผู้ตรวจสอบเป็น user ชื่อ นามสกุล รหัสพนักงาน และตำแหน่ง (พบช.4 หผ.)
   const [reviewerName, setReviewerName] = useState<string>(
-    contract?.reviewedBy || 'นายชวลิต รุ่งเรืองวิทย์ (ผู้ตรวจสอบสัญญา กฟภ.)'
+    contract?.reviewedBy || 'นายสมเกียรติ สว่างไสว (รหัสพนักงาน: 504128, พบช.4 หผ.)'
   );
   const [reviewNotes, setReviewNotes] = useState<string>(
-    contract?.reviewNotes || 'เอกสารสัญญาซื้อขายไฟฟ้าฉบับจริงและเอกสารแนบถูกต้องครบถ้วนตามระเบียบ กฟภ.'
+    contract?.reviewNotes || ''
   );
+  const [reviewNotesError, setReviewNotesError] = useState<string>('');
   const [isConfirmedSuccess, setIsConfirmedSuccess] = useState<boolean>(false);
+  const [isRejectSuccess, setIsRejectSuccess] = useState<boolean>(false);
 
   const currentFile = fileList[activeFileIndex] || null;
   const totalPages = currentFile?.pageCount || 12;
@@ -115,8 +124,12 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
     );
   };
 
-  // Confirm whole contract verification
-  const handleFinalConfirm = () => {
+  // ข้อ 6: นำเข้าข้อมูลถูกต้อง
+  const handleApproveValid = () => {
+    setReviewNotesError('');
+    const finalNotes =
+      reviewNotes.trim() || 'เอกสารสัญญาซื้อขายไฟฟ้าและเอกสารแนบถูกต้องครบถ้วนตามระเบียบ กฟภ.';
+
     const verifiedList = fileList.map((f) => ({
       ...f,
       isVerified: true,
@@ -124,10 +137,28 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
       verifiedAt: f.verifiedAt || new Date().toLocaleString('th-TH'),
     }));
 
-    onConfirmVerification(consumer.id, verifiedList, reviewNotes, reviewerName);
+    onConfirmVerification(consumer.id, verifiedList, finalNotes, reviewerName);
     setIsConfirmedSuccess(true);
     setTimeout(() => {
       setIsConfirmedSuccess(false);
+      onClose();
+    }, 1200);
+  };
+
+  // ข้อ 7: นำเข้าข้อมูลไม่ถูกต้อง และบังคับระบุ บันทึกความเห็นการตรวจสัญญา
+  const handleRejectInvalid = () => {
+    if (!reviewNotes.trim()) {
+      setReviewNotesError('กรุณาระบุบันทึกความเห็นการตรวจสัญญา (บังคับระบุเหตุผลกรณีนำเข้าข้อมูลไม่ถูกต้อง)');
+      return;
+    }
+    setReviewNotesError('');
+
+    if (onRejectVerification) {
+      onRejectVerification(consumer.id, reviewNotes.trim(), reviewerName);
+    }
+    setIsRejectSuccess(true);
+    setTimeout(() => {
+      setIsRejectSuccess(false);
       onClose();
     }, 1200);
   };
@@ -166,7 +197,7 @@ CA: ${consumer.accountNumber}
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold tracking-tight">
-                หน้าตรวจสอบและรับรองสัญญาซื้อขายไฟฟ้า (กฟภ.)
+                หน้าตรวจสอบ/รับรองข้อมูลสัญญาซื้อขายไฟฟ้า (กฟภ.)
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-purple-100">
                 PLMS Verification
@@ -395,22 +426,38 @@ CA: ${consumer.accountNumber}
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  บันทึกความเห็นการตรวจสัญญา
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>บันทึกความเห็นการตรวจสัญญา</span>
+                  <span className="text-[10px] text-slate-400">
+                    * บังคับระบุเมื่อนำเข้าข้อมูลไม่ถูกต้อง
+                  </span>
                 </label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={reviewNotes}
-                  onChange={(e) => setReviewNotes(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs bg-white border border-purple-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-400 resize-none"
-                  placeholder="ระบุข้อสังเกตหรือผลการตรวจสอบเอกสาร..."
+                  onChange={(e) => {
+                    setReviewNotes(e.target.value);
+                    if (reviewNotesError) setReviewNotesError('');
+                  }}
+                  className={`w-full px-2.5 py-1.5 text-xs bg-white rounded-lg outline-none resize-none transition-colors ${
+                    reviewNotesError
+                      ? 'border-2 border-rose-500 focus:ring-2 focus:ring-rose-400 bg-rose-50/20'
+                      : 'border border-purple-200 focus:ring-2 focus:ring-purple-400'
+                  }`}
+                  placeholder="ระบุข้อสังเกตหรือเหตุผลในการตรวจสอบเอกสาร (เช่น ข้อมูลไม่ตรงกับสัญญาหลัก, รอปรับปรุงขนาดหม้อแปลง)..."
                 />
+                {reviewNotesError && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{reviewNotesError}</span>
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Left Footer Action: Confirm Contract Verification */}
-          <div className="p-4 border-t border-slate-200 bg-white space-y-2">
+          {/* Left Footer Action: นำเข้าข้อมูลถูกต้อง และ นำเข้าข้อมูลไม่ถูกต้อง */}
+          <div className="p-4 border-t border-slate-200 bg-white space-y-2.5">
             {fileList.length === 0 ? (
               <button
                 type="button"
@@ -422,34 +469,62 @@ CA: ${consumer.accountNumber}
                 <span>ยังไม่ได้แนบไฟล์สัญญา (ไม่สามารถยืนยันได้)</span>
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleFinalConfirm}
-                disabled={isConfirmedSuccess}
-                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
-                  isConfirmedSuccess
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-[#702d8a] hover:bg-purple-800 text-white hover:shadow-md'
-                }`}
-              >
-                {isConfirmedSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 stroke-[3]" />
-                    <span>ยืนยันการรับรองสัญญาสำเร็จ!</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>ยืนยันการตรวจสอบสัญญาซื้อขายไฟฟ้า</span>
-                  </>
-                )}
-              </button>
+              <div className="space-y-2">
+                {/* 1. ปุ่ม นำเข้าข้อมูลถูกต้อง (ข้อ 6) */}
+                <button
+                  type="button"
+                  onClick={handleApproveValid}
+                  disabled={isConfirmedSuccess || isRejectSuccess}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer ${
+                    isConfirmedSuccess
+                      ? 'bg-emerald-700 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-md'
+                  }`}
+                >
+                  {isConfirmedSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>นำเข้าข้อมูลถูกต้องเรียบร้อย!</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>นำเข้าข้อมูลถูกต้อง</span>
+                    </>
+                  )}
+                </button>
+
+                {/* 2. ปุ่ม นำเข้าข้อมูลไม่ถูกต้อง (ข้อ 7) */}
+                <button
+                  type="button"
+                  onClick={handleRejectInvalid}
+                  disabled={isConfirmedSuccess || isRejectSuccess}
+                  className={`w-full py-2 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border shadow-xs transition-all cursor-pointer ${
+                    isRejectSuccess
+                      ? 'bg-rose-700 text-white border-rose-700'
+                      : 'bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border-rose-300'
+                  }`}
+                  title="ส่งกลับเพื่อแก้ไขข้อมูล และย้ายผู้ใช้ไฟฟ้ารายนี้ไปที่ tab รอแก้ไขข้อมูล"
+                >
+                  {isRejectSuccess ? (
+                    <>
+                      <Check className="w-4 h-4 stroke-[3]" />
+                      <span>บันทึกสถานะรอแก้ไขข้อมูลแล้ว!</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4" />
+                      <span>นำเข้าข้อมูลไม่ถูกต้อง</span>
+                    </>
+                  )}
+                </button>
+              </div>
             )}
 
-            <p className="text-[10px] text-center text-slate-400">
+            <p className="text-[10px] text-center text-slate-400 leading-relaxed">
               {fileList.length === 0
-                ? 'กรุณาแนบไฟล์สัญญาก่อน เพื่อเปิดให้ตรวจสอบและรับรองสัญญา'
-                : 'เมื่อกดยืนยัน ระบบจะอัปเดตสถานะเป็น "เสร็จสิ้น (อนุมัติแล้ว)" และบันทึกประวัติการตรวจสอบทันที'}
+                ? 'กรุณาแนบไฟล์สัญญาก่อน เพื่อเปิดให้ตรวจสอบและรับรองข้อมูล'
+                : 'หากเลือก "นำเข้าข้อมูลไม่ถูกต้อง" ผู้ใช้ไฟฟ้ารายนี้จะย้ายไปที่ tab "รอแก้ไขข้อมูล" ทันที'}
             </p>
           </div>
         </section>

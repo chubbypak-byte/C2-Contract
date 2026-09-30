@@ -1,7 +1,12 @@
 import React from 'react';
 import { ElectricityConsumer } from '../types/contract';
 
-export type TabType = 'ทั้งหมด' | 'แนบไฟล์แล้ว' | 'รอตรวจสอบไฟล์สัญญา' | 'เสร็จสิ้น';
+export type TabType =
+  | 'ทั้งหมด'
+  | 'แนบไฟล์แล้ว'
+  | 'รอตรวจสอบไฟล์สัญญา'
+  | 'รอแก้ไขข้อมูล'
+  | 'เสร็จสิ้น';
 
 interface FilterTabsProps {
   activeTab: TabType;
@@ -18,13 +23,15 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
     ทั้งหมด: consumers.length,
     แนบไฟล์แล้ว: consumers.filter((c) => c.contractStatus === 'uploaded').length,
     รอตรวจสอบไฟล์สัญญา: consumers.filter((c) => c.contractStatus === 'pending_review').length,
+    รอแก้ไขข้อมูล: consumers.filter((c) => c.contractStatus === 'needs_revision').length,
     เสร็จสิ้น: consumers.filter((c) => c.contractStatus === 'completed').length,
   };
 
-  const tabs: { label: TabType; count: number }[] = [
+  const tabs: { label: TabType; count: number; badgeColor?: string }[] = [
     { label: 'ทั้งหมด', count: counts['ทั้งหมด'] },
     { label: 'แนบไฟล์แล้ว', count: counts['แนบไฟล์แล้ว'] },
     { label: 'รอตรวจสอบไฟล์สัญญา', count: counts['รอตรวจสอบไฟล์สัญญา'] },
+    { label: 'รอแก้ไขข้อมูล', count: counts['รอแก้ไขข้อมูล'], badgeColor: counts['รอแก้ไขข้อมูล'] > 0 ? 'bg-rose-100 text-rose-700' : undefined },
     { label: 'เสร็จสิ้น', count: counts['เสร็จสิ้น'] },
   ];
 
@@ -47,6 +54,8 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
               className={`px-2 py-0.5 text-xs rounded-full font-mono tabular-nums transition-colors ${
                 isActive
                   ? 'bg-sky-100 text-sky-800 font-bold'
+                  : tab.badgeColor
+                  ? `${tab.badgeColor} font-semibold`
                   : 'bg-white/80 text-slate-500 border border-slate-200/50'
               }`}
             >

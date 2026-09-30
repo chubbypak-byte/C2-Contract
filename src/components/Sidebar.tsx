@@ -157,68 +157,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               })}
             </nav>
           </div>
-
-          {/* Current Active Role Card */}
-          <div className="bg-gradient-to-br from-slate-50 to-sky-50/50 rounded-2xl p-3.5 border border-sky-100/80 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold text-slate-500">
-                สิทธิ์การใช้งานปัจจุบัน
-              </span>
-              <span
-                className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${currentRole.badgeColor}`}
-              >
-                {currentRole.id === 'viewer' ? 'ดูข้อมูลอย่างเดียว' : 'มีสิทธิ์ดำเนินการ'}
-              </span>
-            </div>
-
-            <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <span>{currentRole.title}</span>
-            </div>
-
-            <div className="space-y-1 text-[11px] text-slate-600 bg-white/80 p-2.5 rounded-xl border border-sky-100">
-              <div className="flex items-center justify-between">
-                <span>ดู Dashboard & ทะเบียน:</span>
-                <span className="text-emerald-600 font-medium flex items-center gap-0.5">
-                  <CheckCircle2 className="w-3 h-3" /> ได้
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>กดดูรายละเอียดสัญญา:</span>
-                {currentRole.permissions.canViewDetails ? (
-                  <span className="text-emerald-600 font-medium flex items-center gap-0.5">
-                    <CheckCircle2 className="w-3 h-3" /> ได้
-                  </span>
-                ) : (
-                  <span className="text-rose-500 font-medium flex items-center gap-0.5">
-                    <Lock className="w-3 h-3" /> ไม่ได้
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center justify-between">
-                <span>อัพโหลดไฟล์สัญญา:</span>
-                <span className={currentRole.permissions.canUploadFiles ? 'text-emerald-600' : 'text-slate-400'}>
-                  {currentRole.permissions.canUploadFiles ? 'ได้' : 'ไม่ได้'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>ตรวจสอบ/รับรองสัญญา:</span>
-                <span className={currentRole.permissions.canVerifyContract ? 'text-emerald-600' : 'text-slate-400'}>
-                  {currentRole.permissions.canVerifyContract ? 'ได้' : 'ไม่ได้'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                onSelectTab('permissions');
-                onCloseMobile?.();
-              }}
-              className="w-full py-1.5 px-2.5 text-xs text-sky-700 bg-white hover:bg-sky-50 font-medium border border-sky-200 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
-              <span>ปรับแต่งหรือสลับบทบาท</span>
-            </button>
-          </div>
         </div>
 
         {/* Sidebar Footer info */}

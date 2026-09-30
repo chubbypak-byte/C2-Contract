@@ -7,7 +7,7 @@ export interface RolePermissions {
   canUploadFiles: boolean; // อัพโหลดไฟล์สัญญา
   canEditData: boolean; // แก้ไขข้อมูล
   canDeleteData: boolean; // ลบข้อมูล
-  canVerifyContract: boolean; // ตรวจสอบ/รับรองสัญญา
+  canVerifyContract: boolean; // ตรวจสอบ/รับรองข้อมูล
   canManagePermissions: boolean; // กำหนดสิทธิ์
 }
 
@@ -23,6 +23,8 @@ export interface RoleDefinition {
 export interface SystemUser {
   id: string;
   name: string;
+  employeeId?: string;
+  position?: string;
   email: string;
   role: UserRole;
   department: string;
@@ -37,7 +39,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
     title: 'ผู้ดูแลระบบสูงสุด (Super Admin)',
     department: 'ฝ่ายบริหารสัญญาและเทคโนโลยีสารสนเทศ กฟภ.',
     badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
-    description: 'มีสิทธิ์สมบูรณ์ในการจัดการระบบ ดู Dashboard, ทะเบียน, ดูรายละเอียด, อัพโหลด, แก้ไข, ลบข้อมูล, ตรวจสอบสัญญา และกำหนดสิทธิ์ผู้ใช้งาน',
+    description: 'มีสิทธิ์สมบูรณ์ในการจัดการระบบ ดู Dashboard, ทะเบียน, ดูรายละเอียด, อัพโหลด, แก้ไข, ลบข้อมูล, ตรวจสอบ/รับรองข้อมูล และกำหนดสิทธิ์ผู้ใช้งาน',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,
@@ -51,10 +53,10 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
   },
   legal_officer: {
     id: 'legal_officer',
-    title: 'นิติกรสัญญา / ผู้ตรวจสอบ (Legal Officer)',
-    department: 'ฝ่ายนิติการและสัญญาซื้อขายไฟฟ้า กฟภ.',
+    title: 'นายสมเกียรติ สว่างไสว (รหัสพนักงาน: 504128, พบช.4 หผ.)',
+    department: 'กลุ่มงานตรวจสอบข้อมูลสัญญา กฟภ.',
     badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
-    description: 'มีสิทธิ์ดู Dashboard, ทะเบียน, ดูรายละเอียด, ตรวจสอบรับรองสัญญา, อัพโหลดเอกสาร และแก้ไขข้อมูลสัญญา (ไม่มีสิทธิ์ลบข้อมูลและกำหนดสิทธิ์)',
+    description: 'มีสิทธิ์ดู Dashboard, ทะเบียน, ดูรายละเอียด, ตรวจสอบ/รับรองข้อมูล, อัพโหลดเอกสาร และแก้ไขข้อมูลสัญญา (ไม่มีสิทธิ์ลบข้อมูลและกำหนดสิทธิ์)',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,
@@ -71,7 +73,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
     title: 'เจ้าหน้าที่บันทึกข้อมูล (Data Entry Officer)',
     department: 'แผนกบริการลูกค้าและสัญญา กฟภ. สาขา',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    description: 'มีสิทธิ์ดู Dashboard, ทะเบียนสัญญา, กดดูรายละเอียด และอัพโหลดไฟล์สัญญาหลัก/แนบท้าย (ไม่มีสิทธิ์แก้ไข ลบ หรือตรวจสอบรับรองสัญญา)',
+    description: 'มีสิทธิ์ดู Dashboard, ทะเบียนสัญญา, กดดูรายละเอียด และอัพโหลดไฟล์สัญญาหลัก/แนบท้าย (ไม่มีสิทธิ์แก้ไข ลบ หรือตรวจสอบ/รับรองข้อมูล)',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,
@@ -106,6 +108,8 @@ export const INITIAL_SYSTEM_USERS: SystemUser[] = [
   {
     id: 'usr-1',
     name: 'นายกิตติคุณ นิติสารัตถ์',
+    employeeId: '501234',
+    position: 'ผชก.',
     email: 'kittikun.pea@pea.co.th',
     role: 'super_admin',
     department: 'ฝ่ายนิติการและสัญญาซื้อขายไฟฟ้า',
@@ -115,17 +119,21 @@ export const INITIAL_SYSTEM_USERS: SystemUser[] = [
   },
   {
     id: 'usr-2',
-    name: 'น.ส.วรรณิศา รัตนประสิทธิ์',
-    email: 'wannisa.rat@pea.co.th',
+    name: 'นายสมเกียรติ สว่างไสว',
+    employeeId: '504128',
+    position: 'พบช.4 หผ.',
+    email: 'somkiat.saw@pea.co.th',
     role: 'legal_officer',
-    department: 'กลุ่มงานตรวจสอบสัญญา กฟจ.ชลบุรี',
-    avatarText: 'วน',
+    department: 'กลุ่มงานตรวจสอบข้อมูลสัญญา กฟจ.ชลบุรี',
+    avatarText: 'สก',
     lastActive: '10 นาทีที่แล้ว',
     status: 'active',
   },
   {
     id: 'usr-3',
     name: 'นายธนาธิป สิทธิโชค',
+    employeeId: '508821',
+    position: 'พบค.3',
     email: 'thanathip.sit@pea.co.th',
     role: 'data_officer',
     department: 'แผนกบริการลูกค้าสัมพันธ์ กฟจ.ระยอง',
@@ -136,6 +144,8 @@ export const INITIAL_SYSTEM_USERS: SystemUser[] = [
   {
     id: 'usr-4',
     name: 'นายพงษ์ศักดิ์ ธรรมรัตน์ (ผู้ตรวจสอบภายนอก)',
+    employeeId: 'EXT-091',
+    position: 'ผู้ตรวจประเมิน',
     email: 'pongsak.auditor@external.pea.co.th',
     role: 'viewer',
     department: 'คณะผู้ตรวจติดตามและประเมินผลภายนอก',

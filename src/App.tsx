@@ -10,6 +10,7 @@ import { AddConsumerModal } from './components/AddConsumerModal';
 import { ContractUploadModal } from './components/ContractUploadModal';
 import { ContractDetailDrawer } from './components/ContractDetailDrawer';
 import { ContractVerificationPage } from './components/ContractVerificationPage';
+import { ConsumerAttachmentsModal } from './components/ConsumerAttachmentsModal';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { Toast, ToastMessage } from './components/Toast';
 import { INITIAL_CONSUMERS, INITIAL_NOTIFICATIONS } from './data/initialData';
@@ -52,11 +53,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUtility, setSelectedUtility] = useState('all');
   const [selectedVoltage, setSelectedVoltage] = useState('all');
+  const [selectedAuthority, setSelectedAuthority] = useState('all');
 
   // Modals & Drawers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedForUpload, setSelectedForUpload] = useState<ElectricityConsumer | null>(null);
   const [selectedForView, setSelectedForView] = useState<ElectricityConsumer | null>(null);
+  const [selectedForAttachments, setSelectedForAttachments] = useState<ElectricityConsumer | null>(null);
   const [selectedForVerification, setSelectedForVerification] = useState<ElectricityConsumer | null>(null);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -70,6 +73,9 @@ export default function App() {
         return false;
       }
       if (activeTab === 'รอตรวจสอบไฟล์สัญญา' && item.contractStatus !== 'pending_review') {
+        return false;
+      }
+      if (activeTab === 'รอแก้ไขข้อมูล' && item.contractStatus !== 'needs_revision') {
         return false;
       }
       if (activeTab === 'เสร็จสิ้น' && item.contractStatus !== 'completed') {
@@ -86,7 +92,15 @@ export default function App() {
         return false;
       }
 
-      // 4. Search query filter
+      // 4. Authority filter (ผจก. อฝ.สบ หรือ ผชก.)
+      if (selectedAuthority !== 'all') {
+        const itemAuth = item.signingAuthority || item.contractDetails?.signingAuthority;
+        if (itemAuth !== selectedAuthority) {
+          return false;
+        }
+      }
+
+      // 5. Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchAccount = item.accountNumber.toLowerCase().includes(q);
@@ -112,7 +126,7 @@ export default function App() {
 
       return true;
     });
-  }, [consumers, activeTab, selectedUtility, selectedVoltage, searchQuery]);
+  }, [consumers, activeTab, selectedUtility, selectedVoltage, selectedAuthority, searchQuery]);
 
   // Handler: Permission Denied Toast
   const handlePermissionDenied = (actionName: string) => {
@@ -215,6 +229,7 @@ export default function App() {
     );
 
     const target = consumers.find((c) => c.id === consumerId);
+    const wasNeedsRevision = target?.contractStatus === 'needs_revision';
 
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
@@ -236,11 +251,97 @@ export default function App() {
     };
     setNotifications((prev) => [newNotif, ...prev]);
 
+    // ข้อ 7: ถ้าแก้ไขแล้ว ให้เด้งกลับไปที่รอตรวจสอบ เพื่อให้คนตรวจสอบตรวจสอบและยืนยันการนำเข้าข้อมูลใหม่
+    if (wasNeedsRevision && newStatus === 'pending_review') {
+      setActiveTab('รอตรวจสอบไฟล์สัญญา');
+      setToast({
+        id: `toast-${Date.now()}`,
+        title: 'แก้ไขข้อมูลสำเร็จ',
+        message: `ส่งข้อมูลผู้ใช้ไฟ CA: ${target?.accountNumber} กลับไปยังแท็บ "รอตรวจสอบไฟล์สัญญา" เรียบร้อยแล้ว`,
+        type: 'success',
+      });
+      return;
+    }
+
     setToast({
       id: `toast-${Date.now()}`,
       title: `สถานะสัญญา: ${getStatusLabel(newStatus)}`,
       message: `บันทึกและอัปเดตสถานะสัญญา ${contractDetails.contractNumber} สำเร็จ`,
       type: newStatus === 'completed' ? 'success' : 'info',
+    });
+  };
+
+  // Handler: Reject verification (นำเข้าข้อมูลไม่ถูกต้อง -> เด้งผู้ใช้ไฟไป tab รอแก้ไขข้อมูล)
+  const handleRejectVerification = (
+    consumerId: string,
+    reviewNotes: string,
+    reviewerName: string
+  ) => {
+    if (!activePermissions.canVerifyContract) {
+      handlePermissionDenied('ตรวจสอบและรับรองข้อมูล');
+      return;
+    }
+
+    setConsumers((prev) =>
+      prev.map((c) => {
+        if (c.id === consumerId) {
+          const updatedDetails: ContractDetails = {
+            contractNumber:
+              c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
+            contractType:
+              c.contractDetails?.contractType &&
+              (CONTRACT_TYPES as readonly string[]).includes(c.contractDetails.contractType)
+                ? c.contractDetails.contractType
+                : 'สัญญาหลัก',
+            contractDate: c.contractDetails?.contractDate || '2026-01-15',
+            expireDate: c.contractDetails?.expireDate || '2031-01-31',
+            securityDeposit: c.contractDetails?.securityDeposit || 1000000,
+            signingAuthority:
+              c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
+            ...c.contractDetails,
+            reviewedBy: reviewerName,
+            reviewedAt: new Date().toLocaleString('th-TH'),
+            reviewNotes,
+          };
+
+          return {
+            ...c,
+            contractDetails: updatedDetails,
+            contractStatus: 'needs_revision' as ContractStatus,
+            updatedAt: new Date().toLocaleString('th-TH'),
+          };
+        }
+        return c;
+      })
+    );
+
+    const target = consumers.find((c) => c.id === consumerId);
+
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: '⚠️ ส่งกลับเพื่อรอแก้ไขข้อมูล (นำเข้าข้อมูลไม่ถูกต้อง)',
+      message: `สัญญาของผู้ใช้ไฟ ${
+        target?.consumerName || target?.location.split(' ')[0]
+      } (CA: ${target?.accountNumber}) ระบุว่านำเข้าข้อมูลไม่ถูกต้อง: ${reviewNotes}`,
+      type: 'warning',
+      timestamp: 'เมื่อสักครู่',
+      consumerId,
+      accountNumber: target?.accountNumber,
+      isRead: false,
+      statusChange: 'needs_revision',
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    // ปิดหน้าตรวจสอบ และเด้งผู้ใช้ไฟฟ้ารายนี้ไปอยู่ใน tab "รอแก้ไขข้อมูล" ทันที (ตามข้อ 7)
+    setSelectedForVerification(null);
+    setCurrentNavTab('registry');
+    setActiveTab('รอแก้ไขข้อมูล');
+
+    setToast({
+      id: `toast-${Date.now()}`,
+      title: 'ส่งกลับรอแก้ไขข้อมูล',
+      message: `ย้ายข้อมูลผู้ใช้ไฟ CA: ${target?.accountNumber} ไปที่แท็บ "รอแก้ไขข้อมูล" เรียบร้อยแล้ว`,
+      type: 'warning',
     });
   };
 
@@ -467,6 +568,7 @@ export default function App() {
     setSearchQuery('');
     setSelectedUtility('all');
     setSelectedVoltage('all');
+    setSelectedAuthority('all');
     setActiveTab('ทั้งหมด');
   };
 
@@ -596,6 +698,8 @@ export default function App() {
                 onUtilityChange={setSelectedUtility}
                 selectedVoltage={selectedVoltage}
                 onVoltageChange={setSelectedVoltage}
+                selectedAuthority={selectedAuthority}
+                onAuthorityChange={setSelectedAuthority}
                 onExport={handleExportCSV}
                 onReset={handleResetFilters}
                 filteredCount={filteredConsumers.length}
@@ -625,6 +729,10 @@ export default function App() {
                     return;
                   }
                   setSelectedForView(consumer);
+                }}
+                onViewAttachments={(consumer) => {
+                  // ข้อ 1: คลิกที่ชื่อผู้ใช้ไฟฟ้า แล้วให้แสดงไฟล์สัญญาที่อัพโหลดทั้งหมด เหมือน Tab เอกสารแนบ
+                  setSelectedForAttachments(consumer);
                 }}
                 onVerifyContract={(consumer) => {
                   if (!activePermissions.canVerifyContract) {
@@ -748,12 +856,28 @@ export default function App() {
         isOpen={Boolean(selectedForVerification)}
         onClose={() => setSelectedForVerification(null)}
         onConfirmVerification={handleConfirmVerification}
+        onRejectVerification={handleRejectVerification}
         onOpenUploadModal={(consumer) => {
           if (!activePermissions.canUploadFiles) {
             handlePermissionDenied('อัพโหลดไฟล์สัญญา');
             return;
           }
           setSelectedForVerification(null);
+          setSelectedForUpload(consumer);
+        }}
+      />
+
+      {/* ข้อ 1: โมดอลแสดงไฟล์สัญญาที่อัพโหลดทั้งหมด เมื่อคลิกชื่อผู้ใช้ไฟฟ้า เหมือน Tab เอกสารแนบ */}
+      <ConsumerAttachmentsModal
+        consumer={selectedForAttachments}
+        isOpen={Boolean(selectedForAttachments)}
+        onClose={() => setSelectedForAttachments(null)}
+        onOpenUploadModal={(consumer) => {
+          setSelectedForAttachments(null);
+          if (!activePermissions.canUploadFiles) {
+            handlePermissionDenied('อัพโหลดไฟล์สัญญา');
+            return;
+          }
           setSelectedForUpload(consumer);
         }}
       />

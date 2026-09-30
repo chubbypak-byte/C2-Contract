@@ -9,9 +9,13 @@ import {
   Shield,
   Check,
   Lock,
+  CheckCircle2,
+  ShieldCheck,
+  UserCheck,
+  BadgeCheck,
 } from 'lucide-react';
 import { NotificationItem } from '../types/contract';
-import { UserRole, RoleDefinition } from '../types/permissions';
+import { UserRole, RoleDefinition, INITIAL_SYSTEM_USERS } from '../types/permissions';
 
 interface HeaderProps {
   notifications: NotificationItem[];
@@ -38,6 +42,27 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  // ข้อมูล user ตามบทบาทปัจจุบัน (ข้อ 10)
+  const matchedUser = INITIAL_SYSTEM_USERS.find((u) => u.role === currentRole.id) || {
+    name: currentRole.title,
+    employeeId: '504128',
+    position: 'พบช.4 หผ.',
+    department: currentRole.department,
+  };
+
+  const displayName =
+    currentRole.id === 'legal_officer'
+      ? 'นายสมเกียรติ สว่างไสว'
+      : matchedUser.name;
+  const displayEmployeeId =
+    currentRole.id === 'legal_officer'
+      ? '504128'
+      : matchedUser.employeeId || '501234';
+  const displayPosition =
+    currentRole.id === 'legal_officer'
+      ? 'พบช.4 หผ.'
+      : matchedUser.position || 'เจ้าหน้าที่';
 
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-xs">
@@ -120,49 +145,141 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* User Profile & Role Switcher Dropdown */}
+            {/* User Profile & Role Switcher Dropdown with Permissions Card (ข้อ 8, 9, 10) */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
                 className="flex items-center gap-2.5 pl-2 sm:pl-3 py-1 border-l border-slate-200 hover:bg-slate-50/80 rounded-xl transition-colors cursor-pointer text-left focus:outline-none"
-                title="คลิกเพื่อสลับบทบาทผู้ใช้"
+                title="คลิกเพื่อดูข้อมูลผู้ใช้และสิทธิ์การใช้งานปัจจุบัน"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 to-cyan-400 border border-sky-300 flex items-center justify-center text-white font-bold text-xs shadow-2xs">
-                  {currentRole.id === 'viewer' ? 'VW' : 'PEA'}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 border border-purple-300 flex items-center justify-center text-white font-bold text-xs shadow-2xs">
+                  {currentRole.id === 'viewer' ? 'VW' : 'สก'}
                 </div>
                 <div className="hidden sm:block text-left text-xs">
                   <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span>{currentRole.id === 'viewer' ? 'ผู้เข้าชมทั่วไป' : 'เจ้าหน้าที่ กฟภ.'}</span>
+                    <span>{displayName}</span>
                     <ChevronDown className="w-3 h-3 text-slate-400" />
                   </div>
-                  <div className="text-[11px] text-sky-600 font-medium truncate max-w-[130px]">
-                    {currentRole.title.split(' ')[0]}
+                  <div className="text-[11px] text-purple-700 font-semibold truncate max-w-[180px]">
+                    รหัส: {displayEmployeeId} ({displayPosition})
                   </div>
                 </div>
               </button>
 
-              {/* Role Dropdown Menu */}
+              {/* User Profile & Permissions Dropdown Menu */}
               {isRoleDropdownOpen && (
                 <>
                   <div
                     className="fixed inset-0 z-40"
                     onClick={() => setIsRoleDropdownOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-sky-100 z-50 py-2 divide-y divide-slate-100">
-                    <div className="px-4 py-2.5">
-                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                        สลับบทบาทเพื่อทดสอบสิทธิ์
+                  <div className="absolute right-0 mt-2 w-84 sm:w-96 bg-white rounded-2xl shadow-2xl border border-sky-100 z-50 py-3 divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-150">
+                    {/* User Profile Info Card (ข้อ 10) */}
+                    <div className="px-5 py-3 bg-gradient-to-br from-purple-50/80 via-white to-sky-50/50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+                            {currentRole.id === 'viewer' ? 'VW' : 'สก'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-slate-900 text-sm">
+                              {displayName}
+                            </div>
+                            <div className="text-xs text-purple-800 font-semibold mt-0.5">
+                              รหัสพนักงาน: <span className="font-mono">{displayEmployeeId}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-medium">
+                              ตำแหน่ง: {displayPosition}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${currentRole.badgeColor}`}>
+                          {currentRole.id === 'viewer' ? 'ผู้เข้าชม' : 'เจ้าหน้าที่'}
+                        </span>
                       </div>
-                      <div className="text-xs font-semibold text-slate-800 mt-1">
-                        กำลังใช้งานในบทบาท:
-                      </div>
-                      <div className="text-xs text-sky-700 font-bold">
-                        {currentRole.title}
+                      <div className="text-[11px] text-slate-500 mt-2 pt-2 border-t border-purple-100 flex items-center gap-1.5">
+                        <BadgeCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>{matchedUser.department}</span>
                       </div>
                     </div>
 
-                    <div className="py-1">
+                    {/* ข้อ 8: การ์ด "สิทธิ์การใช้งานปัจจุบัน" มาโชว์ที่ข้อมูล user แทน */}
+                    <div className="p-4 space-y-2 bg-slate-50/60">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-purple-700" />
+                          <span>สิทธิ์การใช้งานปัจจุบัน</span>
+                        </span>
+                        <span className="text-[10px] font-mono text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full font-semibold">
+                          RBAC
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">ดู Dashboard & ทะเบียน:</span>
+                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ได้
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">กดดูรายละเอียดสัญญา:</span>
+                          {currentRole.permissions.canViewDetails ? (
+                            <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ได้
+                            </span>
+                          ) : (
+                            <span className="text-rose-600 font-semibold flex items-center gap-1">
+                              <Lock className="w-3.5 h-3.5 text-rose-500" /> ไม่ได้
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">อัพโหลดไฟล์สัญญา:</span>
+                          <span className={currentRole.permissions.canUploadFiles ? 'text-emerald-700 font-semibold flex items-center gap-1' : 'text-slate-400'}>
+                            {currentRole.permissions.canUploadFiles ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ได้
+                              </>
+                            ) : (
+                              'ไม่ได้'
+                            )}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">แก้ไขข้อมูลสัญญา:</span>
+                          <span className={currentRole.permissions.canEditData ? 'text-emerald-700 font-semibold flex items-center gap-1' : 'text-slate-400'}>
+                            {currentRole.permissions.canEditData ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ได้
+                              </>
+                            ) : (
+                              'ไม่ได้'
+                            )}
+                          </span>
+                        </div>
+                        {/* ข้อ 9: ตรวจสอบ/รับรองข้อมูล */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">ตรวจสอบ/รับรองข้อมูล:</span>
+                          <span className={currentRole.permissions.canVerifyContract ? 'text-emerald-700 font-semibold flex items-center gap-1' : 'text-slate-400'}>
+                            {currentRole.permissions.canVerifyContract ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> ได้
+                              </>
+                            ) : (
+                              'ไม่ได้'
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Role Switcher for Testing */}
+                    <div className="py-2 px-2">
+                      <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        สลับบทบาทผู้ใช้งานเพื่อทดสอบ
+                      </div>
                       {(Object.keys(rolesConfig) as UserRole[]).map((rKey) => {
                         const r = rolesConfig[rKey];
                         const isSelected = currentRole.id === rKey;
@@ -174,33 +291,27 @@ export const Header: React.FC<HeaderProps> = ({
                               onChangeRole(rKey);
                               setIsRoleDropdownOpen(false);
                             }}
-                            className={`w-full text-left px-4 py-2.5 text-xs flex items-start justify-between gap-2 hover:bg-sky-50/80 transition-colors cursor-pointer ${
-                              isSelected ? 'bg-sky-50 text-sky-900 font-semibold' : 'text-slate-700'
+                            className={`w-full text-left px-3 py-2 text-xs rounded-xl flex items-start justify-between gap-2 hover:bg-purple-50/70 transition-colors cursor-pointer ${
+                              isSelected ? 'bg-purple-50 text-purple-950 font-semibold' : 'text-slate-700'
                             }`}
                           >
                             <div>
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 font-medium">
                                 <span>{r.title}</span>
                                 {rKey === 'viewer' && (
                                   <Lock className="w-3 h-3 text-amber-500" />
                                 )}
                               </div>
                               <div className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">
-                                {rKey === 'viewer'
-                                  ? 'ดู Dashboard และทะเบียนได้ แต่กดดูรายละเอียดไม่ได้'
-                                  : r.department}
+                                {r.department}
                               </div>
                             </div>
                             {isSelected && (
-                              <Check className="w-4 h-4 text-sky-600 shrink-0 self-center" />
+                              <Check className="w-4 h-4 text-purple-700 shrink-0 self-center" />
                             )}
                           </button>
                         );
                       })}
-                    </div>
-
-                    <div className="px-4 py-2 bg-slate-50/70 text-[10px] text-slate-500">
-                      <span>กำหนดสิทธิ์เพิ่มเติมได้ที่แท็บ "การกำหนดสิทธิ์" ทางเมนูด้านซ้าย</span>
                     </div>
                   </div>
                 </>

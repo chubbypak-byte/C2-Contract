@@ -28,6 +28,7 @@ interface ConsumerTableProps {
   onOpenUploadModal: (consumer: ElectricityConsumer) => void;
   onOpenAddModal: () => void;
   onViewContract: (consumer: ElectricityConsumer) => void;
+  onViewAttachments?: (consumer: ElectricityConsumer) => void;
   onVerifyContract?: (consumer: ElectricityConsumer) => void;
   onDeleteConsumer?: (consumer: ElectricityConsumer) => void;
   canViewDetails?: boolean;
@@ -43,6 +44,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
   onOpenUploadModal,
   onOpenAddModal,
   onViewContract,
+  onViewAttachments,
   onVerifyContract,
   onDeleteConsumer,
   canViewDetails = true,
@@ -226,18 +228,29 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                       {item.installationNumber}
                     </td>
 
-                    {/* สถานที่ใช้ไฟฟ้า */}
+                    {/* สถานที่ใช้ไฟฟ้า & ชื่อผู้ใช้ไฟฟ้า (คลิกดูไฟล์สัญญาแนบ) */}
                     <td className="py-3.5 px-4 text-slate-700 align-middle">
                       <div className="flex items-start gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-                        <div>
-                          {item.consumerName && (
-                            <div className="font-semibold text-slate-900 text-xs">
-                              {item.consumerName}
-                            </div>
-                          )}
+                        <div className="space-y-0.5">
+                          {/* ข้อ 1: คลิกที่ชื่อผู้ใช้ไฟฟ้า แล้วให้แสดงไฟล์สัญญาที่อัพโหลดทั้งหมด เหมือน Tab เอกสารแนบ */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onViewAttachments) {
+                                onViewAttachments(item);
+                              } else {
+                                handleDetailsClick(item);
+                              }
+                            }}
+                            className="font-bold text-sky-800 hover:text-purple-700 hover:underline text-left text-xs cursor-pointer inline-flex items-center gap-1 group/btn"
+                            title="คลิกเพื่อดูไฟล์สัญญาที่อัพโหลดทั้งหมด (เอกสารแนบ)"
+                          >
+                            <Paperclip className="w-3 h-3 text-purple-600 opacity-75 group-hover/btn:opacity-100 shrink-0" />
+                            <span>{item.consumerName || item.location.split(' ')[0]}</span>
+                          </button>
                           <span
-                            className="text-xs text-slate-600 line-clamp-2"
+                            className="text-xs text-slate-600 line-clamp-2 block"
                             title={item.location}
                           >
                             {item.location}
@@ -337,7 +350,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           </button>
                         )}
 
-                        {/* 2. ตรวจสอบสัญญา (ถ้ายังไม่ตรวจเป็นสีเทา ถ้าตรวจแล้วเป็นสีเขียว) */}
+                        {/* 2. ตรวจสอบ/รับรองข้อมูล (ถ้ายังไม่ตรวจเป็นสีเทา ถ้าตรวจแล้วเป็นสีเขียว) */}
                         {onVerifyContract && (
                           canVerifyContract ? (
                             <button
@@ -349,8 +362,8 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                               }`}
                               title={
                                 isVerified
-                                  ? 'ตรวจสอบสัญญา (ตรวจแล้ว - สีเขียว)'
-                                  : 'ตรวจสอบสัญญา (ยังไม่ตรวจ - สีเทา)'
+                                  ? 'ตรวจสอบ/รับรองข้อมูล (ตรวจแล้ว - สีเขียว)'
+                                  : 'ตรวจสอบ/รับรองข้อมูล (ยังไม่ตรวจ - สีเทา)'
                               }
                             >
                               <FileCheck2
@@ -358,13 +371,13 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                                   isVerified ? 'text-white stroke-[2.5]' : 'text-slate-400'
                                 }`}
                               />
-                              <span>ตรวจสอบสัญญา</span>
+                              <span>ตรวจสอบ/รับรองข้อมูล</span>
                             </button>
                           ) : (
                             <button
-                              onClick={() => onPermissionDenied?.('ตรวจสอบสัญญา')}
+                              onClick={() => onPermissionDenied?.('ตรวจสอบ/รับรองข้อมูล')}
                               className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap"
-                              title="ไม่มีสิทธิ์ตรวจสอบสัญญา"
+                              title="ไม่มีสิทธิ์ตรวจสอบ/รับรองข้อมูล"
                             >
                               <Lock className="w-3 h-3 text-slate-400" />
                               <span>ตรวจสอบ</span>

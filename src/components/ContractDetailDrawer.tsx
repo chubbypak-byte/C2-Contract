@@ -337,12 +337,12 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                   }`}
                   title={
                     isVerified
-                      ? 'ตรวจสอบสัญญา (ตรวจแล้ว - สีเขียว)'
-                      : 'ตรวจสอบสัญญา (ยังไม่ตรวจ - สีเทา)'
+                      ? 'ตรวจสอบ/รับรองข้อมูล (ตรวจแล้ว - สีเขียว)'
+                      : 'ตรวจสอบ/รับรองข้อมูล (ยังไม่ตรวจ - สีเทา)'
                   }
                 >
                   <FileCheck2 className={`w-4 h-4 ${isVerified ? 'text-white' : 'text-slate-400'}`} />
-                  <span>ตรวจสอบสัญญา</span>
+                  <span>ตรวจสอบ/รับรองข้อมูล</span>
                 </button>
               );
             })()}

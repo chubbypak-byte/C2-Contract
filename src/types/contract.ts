@@ -1,4 +1,9 @@
-export type ContractStatus = 'pending_upload' | 'uploaded' | 'pending_review' | 'completed';
+export type ContractStatus =
+  | 'pending_upload'
+  | 'uploaded'
+  | 'pending_review'
+  | 'needs_revision'
+  | 'completed';
 
 export type PEABranch =
   | 'กฟจ.ชลบุรี'

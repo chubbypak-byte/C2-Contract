@@ -16,8 +16,8 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
   const total = consumers.length;
   const uploaded = consumers.filter((c) => c.contractStatus === 'uploaded').length;
   const pendingReview = consumers.filter((c) => c.contractStatus === 'pending_review').length;
+  const needsRevision = consumers.filter((c) => c.contractStatus === 'needs_revision').length;
   const completed = consumers.filter((c) => c.contractStatus === 'completed').length;
-  const pendingUpload = consumers.filter((c) => c.contractStatus === 'pending_upload').length;
 
   const totalTransformers = consumers.reduce((acc, curr) => {
     const val = parseInt(curr.transformerSize.replace(/[^0-9]/g, ''), 10) || 0;
@@ -63,6 +63,20 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       highlight: pendingReview > 0,
     },
     {
+      id: 'รอแก้ไขข้อมูล',
+      title: 'รอแก้ไขข้อมูล',
+      count: needsRevision,
+      unit: 'ฉบับ',
+      subtitle: 'นำเข้าไม่ถูกต้อง ต้องแก้ไขข้อมูลใหม่',
+      icon: FileClock,
+      accent: 'text-rose-700',
+      bgGradient: 'from-rose-50/60 to-white',
+      borderColor: 'border-rose-200',
+      badgeColor: 'text-rose-700 bg-rose-100/60',
+      highlight: needsRevision > 0,
+      highlightText: 'ต้องแก้ไข',
+    },
+    {
       id: 'เสร็จสิ้น',
       title: 'สัญญาเสร็จสิ้นสมบูรณ์',
       count: completed,
@@ -78,7 +92,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 
   return (
     <div id="overview-section" className="mb-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
         {cards.map((card) => {
           const Icon = card.icon;
           const isActive = activeTab === card.id;
@@ -87,32 +101,36 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
             <div
               key={card.id}
               onClick={() => onSelectTab(card.id)}
-              className={`p-5 rounded-2xl bg-gradient-to-b ${card.bgGradient} border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md ${
+              className={`p-4 rounded-2xl bg-gradient-to-b ${card.bgGradient} border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md ${
                 isActive
                   ? `${card.borderColor} ring-2 ring-sky-400 bg-white`
                   : `${card.borderColor} hover:border-sky-300`
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-medium text-slate-500">{card.title}</span>
-                <div className={`p-2 rounded-xl bg-white shadow-2xs border border-slate-100 ${card.accent}`}>
+                <div className={`p-1.5 rounded-xl bg-white shadow-2xs border border-slate-100 ${card.accent}`}>
                   <Icon className="w-4 h-4" />
                 </div>
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums">
+                <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums">
                   {card.count}
                 </span>
                 <span className="text-xs font-medium text-slate-500">{card.unit}</span>
                 {card.highlight && (
-                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-full animate-pulse">
-                    รอจัดการ
+                  <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    card.id === 'รอแก้ไขข้อมูล'
+                      ? 'text-rose-700 bg-rose-100'
+                      : 'text-amber-700 bg-amber-100 animate-pulse'
+                  }`}>
+                    {card.highlightText || 'รอจัดการ'}
                   </span>
                 )}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                 <span className="truncate">{card.subtitle}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </div>
