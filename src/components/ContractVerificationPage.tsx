@@ -26,7 +26,7 @@ import {
   AlertCircle,
   FilePlus
 } from 'lucide-react';
-import { ElectricityConsumer, AttachedFile, ContractStatus } from '../types/contract';
+import { ElectricityConsumer, AttachedFile, ContractStatus, CONTRACT_TYPES, ContractType } from '../types/contract';
 import { formatCurrency, getStatusLabel, getStatusStyle } from '../utils/formatters';
 
 interface ContractVerificationPageProps {
@@ -62,8 +62,8 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
       : [
           {
             id: 'f-1',
-            fileName: contract?.fileName || 'สัญญาฉบับหลัก.pdf',
-            fileCategory: 'สัญญาฉบับหลัก',
+            fileName: contract?.fileName || 'สัญญาหลัก.pdf',
+            fileCategory: 'สัญญาหลัก',
             fileSize: contract?.fileSize || '4.5 MB',
             pageCount: 16,
             uploadedAt: contract?.uploadedAt || new Date().toLocaleString('th-TH'),
@@ -278,9 +278,9 @@ CA: ${consumer.accountNumber}
                 <div className="col-span-2">
                   <span className="text-slate-400 block text-[11px]">ประเภทสัญญา</span>
                   <span className="font-semibold text-slate-900">
-                    {contract?.contractType && contract.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+                    {contract?.contractType && (CONTRACT_TYPES as readonly string[]).includes(contract.contractType)
                       ? contract.contractType
-                      : 'สัญญาฉบับหลัก'}
+                      : 'สัญญาหลัก'}
                   </span>
                 </div>
                 <div>
@@ -648,11 +648,7 @@ CA: ${consumer.accountNumber}
                       </p>
 
                       <p className="text-justify indent-8">
-                        กับ <strong>{consumer.consumerName || consumer.location.split(' ')[0]}</strong> โดย{' '}
-                        <span className="underline decoration-slate-400 font-semibold">
-                          {consumer.authorizedSignatory}
-                        </span>{' '}
-                        ตั้งอยู่ ณ เลขที่ {consumer.location} ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้ใช้ไฟฟ้า"</strong> อีกฝ่ายหนึ่ง
+                        กับ <strong>{consumer.consumerName || consumer.location.split(' ')[0]}</strong> ตั้งอยู่ ณ เลขที่ {consumer.location} ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้ใช้ไฟฟ้า"</strong> อีกฝ่ายหนึ่ง
                       </p>
 
                       {/* Highlighted Specifications Box */}
@@ -697,10 +693,10 @@ CA: ${consumer.accountNumber}
                       <div className="space-y-2">
                         <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้จำหน่าย</p>
                         <p className="font-bold text-slate-900">
-                          ( {consumer.utility} )
+                          ( การไฟฟ้าส่วนภูมิภาค {consumer.utility} )
                         </p>
-                        <p className="text-purple-800 font-medium text-[11px]">
-                          ตำแหน่ง: {consumer.signingAuthority || 'ผจก.'} ปฏิบัติงานแทนผู้ว่าการการไฟฟ้าส่วนภูมิภาค
+                        <p className="text-purple-800 font-bold text-[11px]">
+                          ผู้มีอำนาจลงนาม: {consumer.signingAuthority || 'ผจก.'}
                         </p>
                         <div className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -712,12 +708,9 @@ CA: ${consumer.accountNumber}
                       <div className="space-y-2">
                         <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้ใช้ไฟฟ้า</p>
                         <p className="font-bold text-slate-900">
-                          ( {consumer.authorizedSignatory.split('(')[0].trim()} )
+                          ( ผู้มีอำนาจลงนามฝ่ายผู้ใช้ไฟฟ้า )
                         </p>
-                        <p className="text-slate-600 text-[11px]">
-                          {consumer.signatoryPosition || 'กรรมการผู้มีอำนาจลงนาม'}
-                        </p>
-                        <p className="text-[10px] text-slate-400">
+                        <p className="text-[11px] text-slate-600">
                           {consumer.consumerName || consumer.location.split(' ')[0]}
                         </p>
                       </div>

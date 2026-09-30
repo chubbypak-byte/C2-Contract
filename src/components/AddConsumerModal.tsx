@@ -8,7 +8,9 @@ import {
   VoltageLevel,
   VOLTAGE_LEVELS,
   SigningAuthority,
-  SIGNING_AUTHORITIES
+  SIGNING_AUTHORITIES,
+  CONTRACT_TYPES,
+  ContractType
 } from '../types/contract';
 
 interface AddConsumerModalProps {
@@ -33,15 +35,11 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
   const [transformerSize, setTransformerSize] = useState('1,000 kVA');
   const [voltageLevel, setVoltageLevel] = useState<VoltageLevel>('22-33 kV');
   const [signingAuthority, setSigningAuthority] = useState<SigningAuthority>('ผจก.');
-  const [authorizedSignatory, setAuthorizedSignatory] = useState('');
-  const [signatoryPosition, setSignatoryPosition] = useState('กรรมการผู้มีอำนาจลงนาม');
-  const [contactPhone, setContactPhone] = useState('');
-  const [contactEmail, setContactEmail] = useState('');
 
   // Optional initial contract attach
   const [attachContractNow, setAttachContractNow] = useState(false);
   const [contractNumber, setContractNumber] = useState('');
-  const [contractType, setContractType] = useState('สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)');
+  const [contractType, setContractType] = useState<string>('สัญญาหลัก');
   const [fileName, setFileName] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -51,7 +49,6 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
     if (!accountNumber.trim()) newErrors.accountNumber = 'กรุณาระบุหมายเลขผู้ใช้ไฟฟ้า';
     if (!installationNumber.trim()) newErrors.installationNumber = 'กรุณาระบุหมายเลขการติดตั้ง';
     if (!location.trim()) newErrors.location = 'กรุณาระบุสถานที่ใช้ไฟฟ้า';
-    if (!authorizedSignatory.trim()) newErrors.authorizedSignatory = 'กรุณาระบุชื่อผู้มีอำนาจลงนาม';
     if (attachContractNow && !contractNumber.trim()) {
       newErrors.contractNumber = 'กรุณาระบุเลขที่สัญญา';
     }
@@ -74,10 +71,7 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
       transformerSize,
       voltageLevel,
       signingAuthority,
-      authorizedSignatory: `${authorizedSignatory.trim()} (${signatoryPosition.trim()})`,
-      signatoryPosition: signatoryPosition.trim(),
-      contactPhone: contactPhone.trim(),
-      contactEmail: contactEmail.trim(),
+      authorizedSignatory: signingAuthority,
       contractStatus: attachContractNow && fileName ? 'uploaded' : 'pending_upload',
       attachedFilesCount: attachContractNow && fileName ? 1 : 0,
       verifiedFilesCount: 0,
@@ -277,84 +271,25 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
             </div>
           </div>
 
-          {/* Row 5: อำนาจ (ผจก., อฝ.สบ., ผชก.) & ชื่อผู้มีอำนาจลงนาม */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                อำนาจ (กฟภ.) <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={signingAuthority}
-                onChange={(e) => setSigningAuthority(e.target.value as SigningAuthority)}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none font-semibold text-purple-900"
-              >
-                {SIGNING_AUTHORITIES.map((auth) => (
-                  <option key={auth.value} value={auth.value}>
-                    {auth.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                ชื่อผู้มีอำนาจลงนาม <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={authorizedSignatory}
-                onChange={(e) => setAuthorizedSignatory(e.target.value)}
-                placeholder="เช่น นายเอกชัย ภักดีชนันท์"
-                className={`w-full px-3 py-2 text-sm bg-slate-50 border rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none ${
-                  errors.authorizedSignatory ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200'
-                }`}
-              />
-              {errors.authorizedSignatory && (
-                <p className="text-[11px] text-rose-500 mt-1">{errors.authorizedSignatory}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                ตำแหน่ง
-              </label>
-              <input
-                type="text"
-                value={signatoryPosition}
-                onChange={(e) => setSignatoryPosition(e.target.value)}
-                placeholder="เช่น กรรมการผู้จัดการ"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Row 6: ข้อมูลติดต่อ */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                เบอร์โทรศัพท์ผู้ประสานงาน
-              </label>
-              <input
-                type="text"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                placeholder="เช่น 02-123-4567 หรือ 081-999-8888"
-                className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                อีเมลติดต่อ
-              </label>
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="contract@company.co.th"
-                className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none"
-              />
-            </div>
+          {/* Row 5: ผู้มีอำนาจลงนาม (ระบุแค่ว่าอำนาจใคร เช่น ผจก., อฝ.สบ., ผชก.) */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              ผู้มีอำนาจลงนาม <span className="text-rose-500">*</span>
+            </label>
+            <select
+              value={signingAuthority}
+              onChange={(e) => setSigningAuthority(e.target.value as SigningAuthority)}
+              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none font-semibold text-purple-900"
+            >
+              {SIGNING_AUTHORITIES.map((auth) => (
+                <option key={auth.value} value={auth.value}>
+                  {auth.label} - {auth.desc}
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-slate-400 mt-1 block">
+              ระบุระดับอำนาจลงนามสัญญาของ กฟภ. (ผจก. / อฝ.สบ. / ผชก.)
+            </span>
           </div>
 
           {/* Option: แนบสัญญาเลยหรือไม่ */}
@@ -373,7 +308,7 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
 
             {attachContractNow && (
               <div className="mt-3 p-3 bg-sky-50/50 rounded-xl border border-sky-200 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">เลขที่สัญญา</label>
                     <input
@@ -383,6 +318,20 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
                       placeholder="เช่น PPA-PEA-2026/0580"
                       className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-200 rounded-lg outline-none"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">ประเภทสัญญา</label>
+                    <select
+                      value={contractType}
+                      onChange={(e) => setContractType(e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg outline-none text-slate-900 font-medium"
+                    >
+                      {CONTRACT_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-700 mb-1">ชื่อไฟล์สัญญา</label>

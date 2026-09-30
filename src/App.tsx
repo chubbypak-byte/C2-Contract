@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
-import { HeroBanner } from './components/HeroBanner';
-import { StatsOverview } from './components/StatsOverview';
+import { Sidebar, MainNavTab } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
+import { PermissionsManagement } from './components/PermissionsManagement';
 import { FilterTabs, TabType } from './components/FilterTabs';
 import { SearchBar } from './components/SearchBar';
 import { ConsumerTable } from './components/ConsumerTable';
@@ -12,14 +13,41 @@ import { ContractVerificationPage } from './components/ContractVerificationPage'
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { Toast, ToastMessage } from './components/Toast';
 import { INITIAL_CONSUMERS, INITIAL_NOTIFICATIONS } from './data/initialData';
-import { ElectricityConsumer, ContractStatus, ContractDetails, NotificationItem, AttachedFile } from './types/contract';
+import {
+  ElectricityConsumer,
+  ContractStatus,
+  ContractDetails,
+  NotificationItem,
+  AttachedFile,
+  CONTRACT_TYPES,
+} from './types/contract';
+import {
+  UserRole,
+  RoleDefinition,
+  RolePermissions,
+  DEFAULT_ROLES,
+} from './types/permissions';
 import { exportToCSV, getStatusLabel } from './utils/formatters';
 
 export default function App() {
   const [consumers, setConsumers] = useState<ElectricityConsumer[]>(INITIAL_CONSUMERS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
-  // Filters
+  // Main Navigation Tab (Left Sidebar)
+  // 1. Dashboard สถานะสัญญาซื้อขายไฟฟ้า
+  // 2. ทะเบียนสัญญาซื้อขายไฟฟ้า
+  // 3. การกำหนดสิทธิ์
+  const [currentNavTab, setCurrentNavTab] = useState<MainNavTab>('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Role & Permissions State (RBAC)
+  const [currentRole, setCurrentRole] = useState<UserRole>('legal_officer');
+  const [rolesConfig, setRolesConfig] = useState<Record<UserRole, RoleDefinition>>(DEFAULT_ROLES);
+
+  const activeRoleDefinition = rolesConfig[currentRole];
+  const activePermissions = activeRoleDefinition.permissions;
+
+  // Filters for Tab 2: ทะเบียนสัญญาซื้อขายไฟฟ้า
   const [activeTab, setActiveTab] = useState<TabType>('ทั้งหมด');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUtility, setSelectedUtility] = useState('all');
@@ -34,7 +62,7 @@ export default function App() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // Filtered consumers logic
+  // Filtered consumers logic for registry
   const filteredConsumers = useMemo(() => {
     return consumers.filter((item) => {
       // 1. Tab filter
@@ -86,8 +114,23 @@ export default function App() {
     });
   }, [consumers, activeTab, selectedUtility, selectedVoltage, searchQuery]);
 
+  // Handler: Permission Denied Toast
+  const handlePermissionDenied = (actionName: string) => {
+    setToast({
+      id: `toast-perm-${Date.now()}`,
+      title: 'สิทธิ์การใช้งานถูกจำกัด',
+      message: `บทบาท "${activeRoleDefinition.title.split(' ')[0]}" ไม่มีสิทธิ์ "${actionName}" ตามนโยบายความปลอดภัย`,
+      type: 'warning',
+    });
+  };
+
   // Handler: Add new consumer
   const handleAddConsumer = (newConsumer: ElectricityConsumer) => {
+    if (!activePermissions.canEditData) {
+      handlePermissionDenied('เพิ่มข้อมูลผู้ใช้ไฟฟ้า');
+      return;
+    }
+
     setConsumers((prev) => [newConsumer, ...prev]);
 
     const newNotif: NotificationItem = {
@@ -110,6 +153,22 @@ export default function App() {
     });
   };
 
+  // Handler: Delete consumer
+  const handleDeleteConsumer = (consumer: ElectricityConsumer) => {
+    if (!activePermissions.canDeleteData) {
+      handlePermissionDenied('ลบข้อมูลสัญญา');
+      return;
+    }
+
+    setConsumers((prev) => prev.filter((c) => c.id !== consumer.id));
+    setToast({
+      id: `toast-${Date.now()}`,
+      title: 'ลบข้อมูลสำเร็จ',
+      message: `ลบข้อมูลสัญญาหมายเลข CA: ${consumer.accountNumber} เรียบร้อยแล้ว`,
+      type: 'info',
+    });
+  };
+
   // Handler: Save / Upload contract
   const handleSaveContract = (
     consumerId: string,
@@ -120,15 +179,26 @@ export default function App() {
     verifiedFilesCount?: number,
     consumerUpdates?: Partial<ElectricityConsumer>
   ) => {
+    if (!activePermissions.canUploadFiles && !activePermissions.canEditData) {
+      handlePermissionDenied('อัพโหลดหรือแก้ไขไฟล์สัญญา');
+      return;
+    }
+
     setConsumers((prev) =>
       prev.map((c) => {
         if (c.id === consumerId) {
-          const filesCount = attachedFilesCount !== undefined 
-            ? attachedFilesCount 
-            : (contractDetails.files ? contractDetails.files.length : (c.attachedFilesCount || 1));
-          const verified = verifiedFilesCount !== undefined 
-            ? verifiedFilesCount 
-            : (newStatus === 'completed' ? filesCount : c.verifiedFilesCount);
+          const filesCount =
+            attachedFilesCount !== undefined
+              ? attachedFilesCount
+              : contractDetails.files
+              ? contractDetails.files.length
+              : c.attachedFilesCount || 1;
+          const verified =
+            verifiedFilesCount !== undefined
+              ? verifiedFilesCount
+              : newStatus === 'completed'
+              ? filesCount
+              : c.verifiedFilesCount;
 
           return {
             ...c,
@@ -149,8 +219,15 @@ export default function App() {
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title: `อัปเดตสถานะสัญญา: ${getStatusLabel(newStatus)}`,
-      message: activityLog || `สัญญาเลขที่ ${contractDetails.contractNumber} เปลี่ยนสถานะเป็น ${getStatusLabel(newStatus)}`,
-      type: newStatus === 'completed' ? 'success' : newStatus === 'pending_review' ? 'warning' : 'info',
+      message:
+        activityLog ||
+        `สัญญาเลขที่ ${contractDetails.contractNumber} เปลี่ยนสถานะเป็น ${getStatusLabel(newStatus)}`,
+      type:
+        newStatus === 'completed'
+          ? 'success'
+          : newStatus === 'pending_review'
+          ? 'warning'
+          : 'info',
       timestamp: 'เมื่อสักครู่',
       consumerId,
       accountNumber: target?.accountNumber,
@@ -167,26 +244,35 @@ export default function App() {
     });
   };
 
-  // Handler: Confirm contract verification from verification page (Left: Details, Right: Document)
+  // Handler: Confirm contract verification from verification page
   const handleConfirmVerification = (
     consumerId: string,
     verifiedFiles: AttachedFile[],
     reviewNotes: string,
     reviewerName: string
   ) => {
+    if (!activePermissions.canVerifyContract) {
+      handlePermissionDenied('ตรวจสอบและรับรองสัญญา');
+      return;
+    }
+
     setConsumers((prev) =>
       prev.map((c) => {
         if (c.id === consumerId) {
           const updatedDetails: ContractDetails = {
             ...c.contractDetails,
-            contractNumber: c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
-            contractType: c.contractDetails?.contractType && c.contractDetails.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
-              ? c.contractDetails.contractType
-              : 'สัญญาฉบับหลัก',
+            contractNumber:
+              c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
+            contractType:
+              c.contractDetails?.contractType &&
+              (CONTRACT_TYPES as readonly string[]).includes(c.contractDetails.contractType)
+                ? c.contractDetails.contractType
+                : 'สัญญาหลัก',
             contractDate: c.contractDetails?.contractDate || '2026-01-15',
             expireDate: c.contractDetails?.expireDate || '2031-01-31',
             securityDeposit: c.contractDetails?.securityDeposit || 1000000,
-            signingAuthority: c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
+            signingAuthority:
+              c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
             reviewedBy: reviewerName,
             reviewedAt: new Date().toLocaleString('th-TH'),
             reviewNotes,
@@ -211,7 +297,9 @@ export default function App() {
     const newNotif: NotificationItem = {
       id: `notif-${Date.now()}`,
       title: 'อนุมัติและรับรองสัญญาเรียบร้อย',
-      message: `สัญญาซื้อขายไฟฟ้าของ ${target?.consumerName || target?.location.split(' ')[0]} ตรวจสอบและรับรองสำเร็จแล้ว`,
+      message: `สัญญาซื้อขายไฟฟ้าของ ${
+        target?.consumerName || target?.location.split(' ')[0]
+      } ตรวจสอบและรับรองสำเร็จแล้ว`,
       type: 'success',
       timestamp: 'เมื่อสักครู่',
       consumerId,
@@ -236,6 +324,7 @@ export default function App() {
     setSelectedForView(null);
     setIsAddModalOpen(false);
     setIsNotificationOpen(false);
+    setCurrentNavTab('dashboard');
     setActiveTab('ทั้งหมด');
     setSearchQuery('');
     setSelectedUtility('all');
@@ -243,8 +332,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setToast({
       id: `toast-${Date.now()}`,
-      title: 'กลับสู่หน้าหลัก',
-      message: 'รีเซ็ตตัวกรองและกลับสู่หน้าหลักเรียบร้อย',
+      title: 'กลับสู่ Dashboard หน้าหลัก',
+      message: 'รีเซ็ตมุมมองและแสดงแดชบอร์ดภาพรวมเรียบร้อย',
       type: 'info',
     });
   };
@@ -254,9 +343,11 @@ export default function App() {
     setIsSimulating(true);
 
     setTimeout(() => {
-      // Find a consumer that can be advanced
       const candidateIndex = consumers.findIndex(
-        (c) => c.contractStatus === 'pending_upload' || c.contractStatus === 'uploaded' || c.contractStatus === 'pending_review'
+        (c) =>
+          c.contractStatus === 'pending_upload' ||
+          c.contractStatus === 'uploaded' ||
+          c.contractStatus === 'pending_review'
       );
 
       if (candidateIndex !== -1) {
@@ -282,14 +373,14 @@ export default function App() {
         } else {
           nextStatus = 'completed';
           nextAttached = Math.max(1, current.attachedFilesCount);
-          nextVerified = nextAttached; // All verified
+          nextVerified = nextAttached;
           title = '✅ อนุมัติสัญญาสำเร็จ';
           message = `สัญญาซื้อขายไฟฟ้าของ ${current.location.split(' ')[0]} ผ่านการตรวจครบทุกไฟล์ (${nextVerified}/${nextAttached}) และอนุมัติแล้ว`;
         }
 
         const updatedDetails: ContractDetails = current.contractDetails || {
           contractNumber: `PPA-AUTO-${Math.floor(Math.random() * 900) + 100}`,
-          contractType: 'สัญญาฉบับหลัก',
+          contractType: 'สัญญาหลัก',
           contractDate: new Date().toISOString().split('T')[0],
           expireDate: '2031-12-31',
           securityDeposit: 850000,
@@ -317,7 +408,12 @@ export default function App() {
           id: `notif-${Date.now()}`,
           title,
           message,
-          type: nextStatus === 'completed' ? 'success' : nextStatus === 'pending_review' ? 'warning' : 'info',
+          type:
+            nextStatus === 'completed'
+              ? 'success'
+              : nextStatus === 'pending_review'
+              ? 'warning'
+              : 'info',
           timestamp: 'เมื่อสักครู่',
           consumerId: current.id,
           accountNumber: current.accountNumber,
@@ -357,7 +453,12 @@ export default function App() {
       const found = consumers.find((c) => c.id === notif.consumerId);
       if (found) {
         setIsNotificationOpen(false);
-        setSelectedForView(found);
+        if (activePermissions.canViewDetails) {
+          setSelectedForView(found);
+        } else {
+          setCurrentNavTab('registry');
+          handlePermissionDenied('กดดูรายละเอียดสัญญา');
+        }
       }
     }
   };
@@ -370,7 +471,10 @@ export default function App() {
   };
 
   const handleExportCSV = () => {
-    exportToCSV(filteredConsumers, `electricity_contracts_${new Date().toISOString().split('T')[0]}.csv`);
+    exportToCSV(
+      filteredConsumers,
+      `electricity_contracts_${new Date().toISOString().split('T')[0]}.csv`
+    );
     setToast({
       id: `toast-${Date.now()}`,
       title: 'ส่งออกไฟล์ CSV สำเร็จ',
@@ -383,94 +487,221 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-['Prompt','Plus_Jakarta_Sans',sans-serif]">
-      {/* 1. Header with 3-zone Top Bar Contract and lightning home action */}
+      {/* 1. Header with Brand, Logo, Title, and User Profile / Role Switcher */}
       <Header
         notifications={notifications}
         onOpenNotifications={() => setIsNotificationOpen(true)}
         onSimulateEvent={handleSimulateRealtimeEvent}
         isSimulating={isSimulating}
         onGoHome={handleGoHome}
+        currentRole={activeRoleDefinition}
+        rolesConfig={rolesConfig}
+        onChangeRole={(newRole) => {
+          setCurrentRole(newRole);
+          setToast({
+            id: `toast-role-${Date.now()}`,
+            title: `สลับบทบาทเป็น: ${rolesConfig[newRole].title.split(' ')[0]}`,
+            message:
+              newRole === 'viewer'
+                ? 'คุณอยู่ในสิทธิ์ผู้เข้าชม (Viewer): ดู Dashboard และทะเบียนได้ แต่ไม่สามารถกดดูรายละเอียดสัญญาได้'
+                : `อัปเดตสิทธิ์การใช้งานตามบทบาทเรียบร้อยแล้ว`,
+            type: newRole === 'viewer' ? 'warning' : 'info',
+          });
+        }}
+        onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
-      {/* Main Content Viewport */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* 2. Modern Hero Banner with generated power grid graphic */}
-        <HeroBanner
-          onQuickSearchFocus={() => {
-            const el = document.getElementById('table-section');
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }}
-          pendingCount={pendingCount}
+      {/* Main Layout: Left Sidebar + Right Content Area */}
+      <div className="flex-1 flex flex-row w-full max-w-[1600px] mx-auto">
+        {/* REQUIRED: แถบเมนูมาอยู่ข้างซ้าย มี tab ดังนี้
+            1. Dashboard สถานะสัญญาซื้อขายไฟฟ้า
+            2. ทะเบียนสัญญาซื้อขายไฟฟ้า
+            3. การกำหนดสิทธิ์ */}
+        <Sidebar
+          currentTab={currentNavTab}
+          onSelectTab={(tab) => setCurrentNavTab(tab)}
+          pendingReviewCount={pendingCount}
+          totalContractsCount={consumers.length}
+          currentRole={activeRoleDefinition}
+          canViewPermissions={activePermissions.canManagePermissions}
+          isOpenMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
-        {/* 3. Summary Statistics Cards */}
-        <StatsOverview
-          consumers={consumers}
-          onSelectTab={(tab) => {
-            if (tab === 'ทั้งหมด' || tab === 'แนบไฟล์แล้ว' || tab === 'รอตรวจสอบไฟล์สัญญา' || tab === 'เสร็จสิ้น') {
-              setActiveTab(tab as TabType);
-            }
-          }}
-          activeTab={activeTab}
-        />
-
-        {/* 4. Table Section Container */}
-        <section id="table-section" className="space-y-4">
-          {/* Section Controls: Filter Tabs & Quick Action */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            {/* REQUIRED: ตัวกรองตารางแบบ Tab ให้เลือก: ทั้งหมด, แนบไฟล์แล้ว, รอตรวจสอบไฟล์สัญญา, เสร็จสิ้น */}
-            <FilterTabs
-              activeTab={activeTab}
-              onChangeTab={setActiveTab}
+        {/* Right Main Content Area */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">
+          {/* TAB 1: Dashboard สถานะสัญญาซื้อขายไฟฟ้า */}
+          {currentNavTab === 'dashboard' && (
+            <DashboardView
               consumers={consumers}
+              onGoToRegistry={(tabFilter) => {
+                if (tabFilter && (tabFilter === 'ทั้งหมด' || tabFilter === 'แนบไฟล์แล้ว' || tabFilter === 'รอตรวจสอบไฟล์สัญญา' || tabFilter === 'เสร็จสิ้น')) {
+                  setActiveTab(tabFilter as TabType);
+                }
+                setCurrentNavTab('registry');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onVerifyConsumer={(consumer) => {
+                if (!activePermissions.canVerifyContract) {
+                  handlePermissionDenied('ตรวจสอบสัญญา');
+                  return;
+                }
+                setSelectedForVerification(consumer);
+              }}
+              canVerifyContract={activePermissions.canVerifyContract}
+              canViewDetails={activePermissions.canViewDetails}
             />
+          )}
 
-            <div className="text-xs text-slate-500 flex items-center gap-1.5 self-end md:self-center">
-              <span>สถานะตัวกรอง:</span>
-              <span className="font-semibold text-sky-800">{activeTab}</span>
+          {/* TAB 2: ทะเบียนสัญญาซื้อขายไฟฟ้า */}
+          {currentNavTab === 'registry' && (
+            <div className="space-y-5">
+              {/* Registry Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-sky-100 shadow-xs">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                    ทะเบียนสัญญาซื้อขายไฟฟ้า
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    ศูนย์รวมข้อมูลสัญญาผู้ใช้ไฟฟ้ารายใหญ่ การไฟฟ้าส่วนภูมิภาค (กฟภ.) ค้นหา กรองสถานะ และตรวจรับไฟล์สัญญา
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-xs font-semibold px-3 py-1 bg-sky-50 text-sky-700 rounded-full border border-sky-200">
+                    ทั้งหมด {consumers.length} รายการ
+                  </span>
+                </div>
+              </div>
+
+              {/* Section Controls: Filter Tabs */}
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                <FilterTabs
+                  activeTab={activeTab}
+                  onChangeTab={setActiveTab}
+                  consumers={consumers}
+                />
+
+                <div className="text-xs text-slate-500 flex items-center gap-1.5 self-end md:self-center">
+                  <span>สถานะตัวกรอง:</span>
+                  <span className="font-semibold text-sky-800">{activeTab}</span>
+                </div>
+              </div>
+
+              {/* Search Bar with multi-criteria search and CSV export */}
+              <SearchBar
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedUtility={selectedUtility}
+                onUtilityChange={setSelectedUtility}
+                selectedVoltage={selectedVoltage}
+                onVoltageChange={setSelectedVoltage}
+                onExport={handleExportCSV}
+                onReset={handleResetFilters}
+                filteredCount={filteredConsumers.length}
+                totalCount={consumers.length}
+              />
+
+              {/* Consumer Table with Enforced Permissions */}
+              <ConsumerTable
+                consumers={filteredConsumers}
+                onOpenUploadModal={(consumer) => {
+                  if (!activePermissions.canUploadFiles) {
+                    handlePermissionDenied('อัพโหลดไฟล์สัญญา');
+                    return;
+                  }
+                  setSelectedForUpload(consumer);
+                }}
+                onOpenAddModal={() => {
+                  if (!activePermissions.canEditData) {
+                    handlePermissionDenied('เพิ่มข้อมูลผู้ใช้ไฟฟ้า');
+                    return;
+                  }
+                  setIsAddModalOpen(true);
+                }}
+                onViewContract={(consumer) => {
+                  if (!activePermissions.canViewDetails) {
+                    handlePermissionDenied('กดดูรายละเอียดสัญญา');
+                    return;
+                  }
+                  setSelectedForView(consumer);
+                }}
+                onVerifyContract={(consumer) => {
+                  if (!activePermissions.canVerifyContract) {
+                    handlePermissionDenied('ตรวจสอบสัญญา');
+                    return;
+                  }
+                  setSelectedForVerification(consumer);
+                }}
+                onDeleteConsumer={handleDeleteConsumer}
+                canViewDetails={activePermissions.canViewDetails}
+                canUploadFiles={activePermissions.canUploadFiles}
+                canVerifyContract={activePermissions.canVerifyContract}
+                canEditData={activePermissions.canEditData}
+                canDeleteData={activePermissions.canDeleteData}
+                onPermissionDenied={handlePermissionDenied}
+              />
             </div>
-          </div>
+          )}
 
-          {/* Search Bar with live multi-criteria search and export */}
-          <SearchBar
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedUtility={selectedUtility}
-            onUtilityChange={setSelectedUtility}
-            selectedVoltage={selectedVoltage}
-            onVoltageChange={setSelectedVoltage}
-            onExport={handleExportCSV}
-            onReset={handleResetFilters}
-            filteredCount={filteredConsumers.length}
-            totalCount={consumers.length}
-          />
-
-          {/* REQUIRED: หน้าแรก (หน้าหลัก) แสดงข้อมูลผู้ใช้ไฟฟ้า เป็นตาราง
-              คอลัมน์: การไฟฟ้า, รหัสการไฟฟ้า, หมายเลขผู้ใช้ไฟฟ้า, การติดตั้ง, สถานที่ใช้ไฟฟ้า, ขนาดหม้อแปลง, แรงดัน, อำนาจลงนาม
-              ปุ่ม: เพิ่มไฟล์สัญญาอยู่ข้างๆในแต่ละบรรทัด
-              ปุ่ม: เพิ่มข้อมูลไว้ด้านขวาบนของตาราง */}
-          <ConsumerTable
-            consumers={filteredConsumers}
-            onOpenUploadModal={(consumer) => setSelectedForUpload(consumer)}
-            onOpenAddModal={() => setIsAddModalOpen(true)}
-            onViewContract={(consumer) => setSelectedForView(consumer)}
-            onVerifyContract={(consumer) => setSelectedForVerification(consumer)}
-          />
-        </section>
-      </main>
+          {/* TAB 3: การกำหนดสิทธิ์ */}
+          {currentNavTab === 'permissions' && (
+            <PermissionsManagement
+              currentRole={currentRole}
+              onChangeActiveRole={(newRole) => {
+                setCurrentRole(newRole);
+                setToast({
+                  id: `toast-role-${Date.now()}`,
+                  title: `สลับบทบาทเป็น: ${rolesConfig[newRole].title.split(' ')[0]}`,
+                  message:
+                    newRole === 'viewer'
+                      ? 'คุณอยู่ในสิทธิ์ผู้เข้าชม (Viewer): ดู Dashboard และทะเบียนได้ แต่ไม่สามารถกดดูรายละเอียดสัญญาได้'
+                      : `อัปเดตสิทธิ์การใช้งานตามบทบาทเรียบร้อยแล้ว`,
+                  type: newRole === 'viewer' ? 'warning' : 'info',
+                });
+              }}
+              rolesConfig={rolesConfig}
+              onUpdateRolePermissions={(roleId, newPermissions) => {
+                setRolesConfig((prev) => ({
+                  ...prev,
+                  [roleId]: {
+                    ...prev[roleId],
+                    permissions: newPermissions,
+                  },
+                }));
+                setToast({
+                  id: `toast-save-perm-${Date.now()}`,
+                  title: 'บันทึกการกำหนดสิทธิ์สำเร็จ',
+                  message: `อัปเดตสิทธิ์สำหรับบทบาท ${rolesConfig[roleId].title.split(' ')[0]} เรียบร้อยแล้ว`,
+                  type: 'success',
+                });
+              }}
+              onResetPermissions={() => {
+                setRolesConfig(DEFAULT_ROLES);
+                setToast({
+                  id: `toast-reset-perm-${Date.now()}`,
+                  title: 'รีเซ็ตสิทธิ์มาตรฐาน กฟภ.',
+                  message: 'คืนค่าสิทธิ์ตามมาตรฐานของระบบเรียบร้อยแล้ว',
+                  type: 'info',
+                });
+              }}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Footer */}
-      <footer className="mt-12 bg-white border-t border-sky-100 py-6 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="mt-auto bg-white border-t border-sky-100 py-6 text-xs text-slate-500">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-slate-700">ระบบจัดเก็บและติดตามสัญญาซื้อขายไฟฟ้า</span>
             <span>·</span>
             <span>การไฟฟ้าส่วนภูมิภาค (กฟภ.)</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>รองรับ Vercel Deployment & PostgreSQL</span>
+            <span>พร้อมใช้งานบน Vercel & PostgreSQL</span>
             <span>·</span>
-            <span>สถาปัตยกรรม High-Availability</span>
+            <span>ระบบกำหนดสิทธิ์ RBAC 4 ระดับ</span>
           </div>
         </div>
       </footer>
@@ -494,22 +725,34 @@ export default function App() {
         isOpen={Boolean(selectedForView)}
         onClose={() => setSelectedForView(null)}
         onEditContract={(consumer) => {
+          if (!activePermissions.canUploadFiles && !activePermissions.canEditData) {
+            handlePermissionDenied('แก้ไขสัญญา');
+            return;
+          }
           setSelectedForView(null);
           setSelectedForUpload(consumer);
         }}
         onVerifyContract={(consumer) => {
+          if (!activePermissions.canVerifyContract) {
+            handlePermissionDenied('ตรวจสอบสัญญา');
+            return;
+          }
           setSelectedForView(null);
           setSelectedForVerification(consumer);
         }}
       />
 
-      {/* NEW: หน้าตรวจสอบสัญญาซื้อขายไฟฟ้า (แบบแยก 2 ฝั่ง ซ้าย: รายละเอียดสัญญา / ขวา: หน้าสัญญาซื้อขายไฟฟ้า) */}
+      {/* หน้าตรวจสอบสัญญาซื้อขายไฟฟ้า (แบบแยก 2 ฝั่ง ซ้าย: รายละเอียดสัญญา / ขวา: หน้าสัญญาซื้อขายไฟฟ้า) */}
       <ContractVerificationPage
         consumer={selectedForVerification}
         isOpen={Boolean(selectedForVerification)}
         onClose={() => setSelectedForVerification(null)}
         onConfirmVerification={handleConfirmVerification}
         onOpenUploadModal={(consumer) => {
+          if (!activePermissions.canUploadFiles) {
+            handlePermissionDenied('อัพโหลดไฟล์สัญญา');
+            return;
+          }
           setSelectedForVerification(null);
           setSelectedForUpload(consumer);
         }}
@@ -525,7 +768,7 @@ export default function App() {
         isSimulating={isSimulating}
       />
 
-      {/* Real-time Floating Toast Alert */}
+      {/* Floating Toast Alert */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );

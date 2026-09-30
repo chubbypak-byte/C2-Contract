@@ -27,7 +27,10 @@ import {
   PEABranch,
   VoltageLevel,
   SigningAuthority,
-  SIGNING_AUTHORITIES
+  SIGNING_AUTHORITIES,
+  CONTRACT_TYPES,
+  ContractType,
+  ATTACHMENT_CATEGORIES
 } from '../types/contract';
 import { getStatusLabel } from '../utils/formatters';
 
@@ -101,11 +104,13 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
   // Other contextual details
   const [location, setLocation] = useState<string>(consumer.location || '');
-  const [contractType, setContractType] = useState<string>(
-    consumer.contractDetails?.contractType && consumer.contractDetails.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
-      ? consumer.contractDetails.contractType
-      : 'สัญญาฉบับหลัก'
-  );
+  const [contractType, setContractType] = useState<string>(() => {
+    const existing = consumer.contractDetails?.contractType;
+    if (existing && CONTRACT_TYPES.includes(existing as ContractType)) {
+      return existing;
+    }
+    return 'สัญญาหลัก';
+  });
   const [capacityKW, setCapacityKW] = useState<number>(
     consumer.contractDetails?.capacityKW || 1500
   );
@@ -138,7 +143,7 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
   // Modal for Adding a new document (Matching the user's second screenshot)
   const [isAddingDoc, setIsAddingDoc] = useState(false);
-  const [newDocTitle, setNewDocTitle] = useState('สัญญาซื้อขายไฟฟ้าฉบับจริง');
+  const [newDocTitle, setNewDocTitle] = useState<string>('สัญญาหลัก');
   const [newDocDescription, setNewDocDescription] = useState('');
   const [newDocFileName, setNewDocFileName] = useState('');
   const [newDocPageCount, setNewDocPageCount] = useState<number>(1);
@@ -171,7 +176,7 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
   // Open add document dialog
   const handleOpenAddDoc = () => {
-    setNewDocTitle('สัญญาซื้อขายไฟฟ้าฉบับจริง');
+    setNewDocTitle('สัญญาหลัก');
     setNewDocDescription('');
     setNewDocFileName('');
     setNewDocPageCount(1);
@@ -511,6 +516,27 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   </span>
                 </div>
 
+                {/* ประเภทสัญญา (มี 7 ประเภทตามข้อกำหนด) */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    ประเภทสัญญา <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={contractType}
+                    onChange={(e) => setContractType(e.target.value)}
+                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none font-medium text-slate-900"
+                  >
+                    {CONTRACT_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    ประเภทสัญญาซื้อขายไฟฟ้า กฟภ.
+                  </span>
+                </div>
+
                 {/* สถานะสัญญา (ขึ้นอัตโนมัติตามสถานะเอกสารจริง ไม่ให้เลือก) */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
@@ -750,20 +776,24 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
             {/* Form Fields matching the screenshot */}
             <form onSubmit={handleAddFile} className="p-6 space-y-4 text-xs">
-              {/* Field 1: หัวข้อเอกสาร : */}
+              {/* Field 1: หัวข้อเอกสาร (มีแค่สัญญาหลัก กับ สัญญาแนบท้ายเท่านั้น) : */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <label className="sm:w-28 text-slate-800 font-semibold sm:text-right shrink-0">
                   หัวข้อเอกสาร :
                 </label>
                 <div className="flex-1 relative">
-                  <input
-                    type="text"
+                  <select
                     value={newDocTitle}
                     onChange={(e) => setNewDocTitle(e.target.value)}
-                    placeholder="เช่น สัญญาซื้อขายไฟฟ้าฉบับจริง, หนังสือค้ำประกันสัญญา"
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#702d8a] focus:ring-1 focus:ring-[#702d8a] bg-white text-slate-900"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#702d8a] focus:ring-1 focus:ring-[#702d8a] bg-white text-slate-900 font-semibold"
                     required
-                  />
+                  >
+                    {ATTACHMENT_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

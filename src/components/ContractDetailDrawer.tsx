@@ -14,7 +14,7 @@ import {
   FileCheck2,
   AlertTriangle
 } from 'lucide-react';
-import { ElectricityConsumer } from '../types/contract';
+import { ElectricityConsumer, CONTRACT_TYPES } from '../types/contract';
 import { formatCurrency, getStatusLabel, getStatusStyle } from '../utils/formatters';
 
 interface ContractDetailDrawerProps {
@@ -162,20 +162,19 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                 <span className="font-semibold text-slate-800 font-mono">{consumer.voltageLevel}</span>
               </div>
               <div className="col-span-2">
-                <span className="text-slate-400 block text-[11px]">ผู้มีอำนาจลงนาม (กฟภ.)</span>
+                <span className="text-slate-400 block text-[11px]">ผู้มีอำนาจลงนาม</span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  {(consumer.signingAuthority || consumer.contractDetails?.signingAuthority) && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-[#702d8a] border border-purple-200">
-                      อำนาจ: {consumer.signingAuthority || consumer.contractDetails?.signingAuthority}
-                    </span>
-                  )}
-                  <span className="font-medium text-slate-800">{consumer.authorizedSignatory}</span>
-                </div>
-                {consumer.contactPhone && (
-                  <span className="text-slate-500 block text-[11px] font-mono mt-0.5">
-                    โทร: {consumer.contactPhone} {consumer.contactEmail ? `· อีเมล: ${consumer.contactEmail}` : ''}
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-purple-100 text-[#702d8a] border border-purple-200">
+                    อำนาจ: {consumer.signingAuthority || consumer.contractDetails?.signingAuthority || 'ผจก.'}
                   </span>
-                )}
+                  <span className="text-xs text-slate-600 font-medium">
+                    {consumer.signingAuthority === 'ผชก.'
+                      ? 'ผู้ช่วยผู้ว่าการการไฟฟ้าส่วนภูมิภาค'
+                      : consumer.signingAuthority === 'อฝ.สบ.'
+                      ? 'ผู้อำนวยการฝ่ายสัญญาและบริการระบบจำหน่าย'
+                      : 'ผู้จัดการการไฟฟ้าส่วนภูมิภาค'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -192,9 +191,9 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                 <div>
                   <span className="text-slate-400 block text-[11px]">ประเภทสัญญา</span>
                   <span className="font-semibold text-slate-800">
-                    {contract.contractType && contract.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+                    {contract.contractType && (CONTRACT_TYPES as readonly string[]).includes(contract.contractType)
                       ? contract.contractType
-                      : 'สัญญาฉบับหลัก'}
+                      : 'สัญญาหลัก'}
                   </span>
                 </div>
 
@@ -289,23 +288,6 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                     </div>
                   )}
                 </div>
-
-                {/* Review Notes */}
-                {contract.reviewNotes && (
-                  <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
-                    <span className="text-[11px] font-semibold text-amber-800 block mb-1">
-                      บันทึกความเห็นทางเทคนิคและนิติการ:
-                    </span>
-                    <p className="text-xs text-amber-950 leading-relaxed">
-                      {contract.reviewNotes}
-                    </p>
-                    {contract.reviewedBy && (
-                      <p className="text-[11px] text-amber-700 mt-2">
-                        ผู้ตรวจสอบ: {contract.reviewedBy} ({contract.reviewedAt})
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-center py-6 text-slate-400">
@@ -350,7 +332,7 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                   }}
                   className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border shadow-xs transition-colors cursor-pointer ${
                     isVerified
-                      ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border-emerald-300'
+                      ? 'text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-600'
                       : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-800 border-slate-300'
                   }`}
                   title={
@@ -359,7 +341,7 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                       : 'ตรวจสอบสัญญา (ยังไม่ตรวจ - สีเทา)'
                   }
                 >
-                  <FileCheck2 className={`w-4 h-4 ${isVerified ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <FileCheck2 className={`w-4 h-4 ${isVerified ? 'text-white' : 'text-slate-400'}`} />
                   <span>ตรวจสอบสัญญา</span>
                 </button>
               );

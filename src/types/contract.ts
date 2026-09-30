@@ -20,6 +20,23 @@ export const PEA_BRANCHES: { name: PEABranch; code: string; province: string }[]
 export type VoltageLevel = '22-33 kV' | '115 kV';
 export const VOLTAGE_LEVELS: VoltageLevel[] = ['22-33 kV', '115 kV'];
 
+// ประเภทสัญญาตามข้อกำหนด มี 7 ประเภท
+export const CONTRACT_TYPES = [
+  'สัญญาหลัก',
+  'สัญญาแนบท้ายเพิ่มขนาดหม้อแปลง',
+  'สัญญาแนบท้ายลดขนาดหม้อแปลง',
+  'สัญญาแนบท้ายกรณีใช้ไฟฟ้าวงจร 22-33 เป็นสำรองฉุกเฉิน',
+  'สัญญาแนบท้ายไฟสำรอง',
+  'สัญญาแนบท้ายเปลี่ยนแปลงชื่อ',
+  'สัญญาแนบท้ายกรณีใช้ไฟฟ้าวงจร 115 สำรองฉุกเฉิน 115',
+] as const;
+
+export type ContractType = typeof CONTRACT_TYPES[number];
+
+// เอกสารและไฟล์แนบ จะมีแค่สัญญาหลัก กับ สัญญาแนบท้ายเท่านั้น
+export const ATTACHMENT_CATEGORIES = ['สัญญาหลัก', 'สัญญาแนบท้าย'] as const;
+export type AttachmentCategory = typeof ATTACHMENT_CATEGORIES[number];
+
 export type UtilityProvider = PEABranch | string;
 
 export type SigningAuthority = 'ผจก.' | 'อฝ.สบ.' | 'ผชก.';
