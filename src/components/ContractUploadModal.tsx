@@ -102,7 +102,9 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
   // Other contextual details
   const [location, setLocation] = useState<string>(consumer.location || '');
   const [contractType, setContractType] = useState<string>(
-    consumer.contractDetails?.contractType || 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+    consumer.contractDetails?.contractType && consumer.contractDetails.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+      ? consumer.contractDetails.contractType
+      : 'สัญญาฉบับหลัก'
   );
   const [capacityKW, setCapacityKW] = useState<number>(
     consumer.contractDetails?.capacityKW || 1500

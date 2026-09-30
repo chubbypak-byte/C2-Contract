@@ -180,11 +180,11 @@ export default function App() {
           const updatedDetails: ContractDetails = {
             ...c.contractDetails,
             contractNumber: c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
-            contractType: c.contractDetails?.contractType || 'สัญญาซื้อขายไฟฟ้าทั่วไป',
+            contractType: c.contractDetails?.contractType && c.contractDetails.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+              ? c.contractDetails.contractType
+              : 'สัญญาฉบับหลัก',
             contractDate: c.contractDetails?.contractDate || '2026-01-15',
-            effectiveDate: c.contractDetails?.effectiveDate || '2026-02-01',
             expireDate: c.contractDetails?.expireDate || '2031-01-31',
-            capacityKW: c.contractDetails?.capacityKW || 1500,
             securityDeposit: c.contractDetails?.securityDeposit || 1000000,
             signingAuthority: c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
             reviewedBy: reviewerName,
@@ -289,11 +289,9 @@ export default function App() {
 
         const updatedDetails: ContractDetails = current.contractDetails || {
           contractNumber: `PPA-AUTO-${Math.floor(Math.random() * 900) + 100}`,
-          contractType: 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)',
+          contractType: 'สัญญาฉบับหลัก',
           contractDate: new Date().toISOString().split('T')[0],
-          effectiveDate: new Date().toISOString().split('T')[0],
           expireDate: '2031-12-31',
-          capacityKW: 1200,
           securityDeposit: 850000,
           fileName: `สัญญาซื้อขายไฟฟ้า_${current.location.split(' ')[0]}_ลงนาม.pdf`,
           fileSize: '4.6 MB',
@@ -511,6 +509,10 @@ export default function App() {
         isOpen={Boolean(selectedForVerification)}
         onClose={() => setSelectedForVerification(null)}
         onConfirmVerification={handleConfirmVerification}
+        onOpenUploadModal={(consumer) => {
+          setSelectedForVerification(null);
+          setSelectedForUpload(consumer);
+        }}
       />
 
       <NotificationDrawer

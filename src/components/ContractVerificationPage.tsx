@@ -21,7 +21,10 @@ import {
   Sparkles,
   Paperclip,
   ExternalLink,
-  Info
+  Info,
+  FileX2,
+  AlertCircle,
+  FilePlus
 } from 'lucide-react';
 import { ElectricityConsumer, AttachedFile, ContractStatus } from '../types/contract';
 import { formatCurrency, getStatusLabel, getStatusStyle } from '../utils/formatters';
@@ -36,6 +39,7 @@ interface ContractVerificationPageProps {
     reviewNotes: string,
     reviewerName: string
   ) => void;
+  onOpenUploadModal?: (consumer: ElectricityConsumer) => void;
 }
 
 export const ContractVerificationPage: React.FC<ContractVerificationPageProps> = ({
@@ -43,31 +47,38 @@ export const ContractVerificationPage: React.FC<ContractVerificationPageProps> =
   isOpen,
   onClose,
   onConfirmVerification,
+  onOpenUploadModal,
 }) => {
   if (!isOpen || !consumer) return null;
 
   const contract = consumer.contractDetails;
-  const initialFiles: AttachedFile[] = contract?.files && contract.files.length > 0
-    ? contract.files
-    : contract?.fileName
-    ? [
-        {
-          id: 'f-1',
-          fileName: contract.fileName,
-          fileCategory: 'สัญญาซื้อขายไฟฟ้าฉบับจริง',
-          fileSize: contract.fileSize || '4.5 MB',
-          pageCount: 16,
-          uploadedAt: contract.uploadedAt || new Date().toLocaleString('th-TH'),
-          isVerified: consumer.contractStatus === 'completed',
-        }
-      ]
+  const hasFilesAttached =
+    Boolean(consumer.attachedFilesCount && consumer.attachedFilesCount > 0) &&
+    Boolean((contract?.files && contract.files.length > 0) || contract?.fileName);
+
+  const initialFiles: AttachedFile[] = hasFilesAttached
+    ? contract?.files && contract.files.length > 0
+      ? contract.files
+      : [
+          {
+            id: 'f-1',
+            fileName: contract?.fileName || 'สัญญาฉบับหลัก.pdf',
+            fileCategory: 'สัญญาฉบับหลัก',
+            fileSize: contract?.fileSize || '4.5 MB',
+            pageCount: 16,
+            uploadedAt: contract?.uploadedAt || new Date().toLocaleString('th-TH'),
+            isVerified: consumer.contractStatus === 'completed',
+          },
+        ]
     : [];
 
   const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [fileList, setFileList] = useState<AttachedFile[]>(initialFiles);
-  const [reviewerName, setReviewerName] = useState<string>('นายชวลิต รุ่งเรืองวิทย์ (วิศวกรไฟฟ้า กฟภ.)');
+  const [reviewerName, setReviewerName] = useState<string>(
+    contract?.reviewedBy || 'นายชวลิต รุ่งเรืองวิทย์ (ผู้ตรวจสอบสัญญา กฟภ.)'
+  );
   const [reviewNotes, setReviewNotes] = useState<string>(
     contract?.reviewNotes || 'เอกสารสัญญาซื้อขายไฟฟ้าฉบับจริงและเอกสารแนบถูกต้องครบถ้วนตามระเบียบ กฟภ.'
   );
@@ -266,8 +277,10 @@ CA: ${consumer.accountNumber}
               <div className="grid grid-cols-2 gap-3 text-slate-700">
                 <div className="col-span-2">
                   <span className="text-slate-400 block text-[11px]">ประเภทสัญญา</span>
-                  <span className="font-medium text-slate-900">
-                    {contract?.contractType || 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'}
+                  <span className="font-semibold text-slate-900">
+                    {contract?.contractType && contract.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+                      ? contract.contractType
+                      : 'สัญญาฉบับหลัก'}
                   </span>
                 </div>
                 <div>
@@ -277,29 +290,10 @@ CA: ${consumer.accountNumber}
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[11px]">วันมีผลบังคับใช้</span>
-                  <span className="font-semibold text-slate-900 font-mono">
-                    {contract?.effectiveDate || '-'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[11px]">ความต้องการพลังไฟฟ้า</span>
-                  <span className="font-semibold font-mono text-slate-900">
-                    {contract?.capacityKW ? `${contract.capacityKW.toLocaleString()} kW` : '-'}
-                  </span>
-                </div>
-                <div>
                   <span className="text-slate-400 block text-[11px]">หลักประกันสัญญา</span>
                   <span className="font-semibold font-mono text-emerald-700">
                     {contract?.securityDeposit ? formatCurrency(contract.securityDeposit) : '-'}
                   </span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-slate-400 block text-[11px]">ผู้แทนฝ่ายผู้ใช้ไฟฟ้า</span>
-                  <span className="font-medium text-slate-900">{consumer.authorizedSignatory}</span>
-                  {consumer.contactPhone && (
-                    <span className="text-[11px] text-slate-400 block mt-0.5">โทร: {consumer.contactPhone}</span>
-                  )}
                 </div>
               </div>
             </div>
@@ -390,7 +384,7 @@ CA: ${consumer.accountNumber}
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  เจ้าหน้าที่วิศวกรผู้ตรวจสอบ
+                  ผู้ตรวจสอบสัญญา
                 </label>
                 <input
                   type="text"
@@ -417,250 +411,331 @@ CA: ${consumer.accountNumber}
 
           {/* Left Footer Action: Confirm Contract Verification */}
           <div className="p-4 border-t border-slate-200 bg-white space-y-2">
-            <button
-              type="button"
-              onClick={handleFinalConfirm}
-              disabled={isConfirmedSuccess}
-              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
-                isConfirmedSuccess
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-[#702d8a] hover:bg-purple-800 text-white hover:shadow-md'
-              }`}
-            >
-              {isConfirmedSuccess ? (
-                <>
-                  <Check className="w-4 h-4 stroke-[3]" />
-                  <span>ยืนยันการรับรองสัญญาสำเร็จ!</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>ยืนยันการตรวจสอบสัญญาซื้อขายไฟฟ้า</span>
-                </>
-              )}
-            </button>
+            {fileList.length === 0 ? (
+              <button
+                type="button"
+                disabled
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                title="ยังไม่ได้แนบไฟล์สัญญา กรุณาแนบไฟล์สัญญาก่อนยืนยันการตรวจสอบ"
+              >
+                <AlertCircle className="w-4 h-4 text-slate-400" />
+                <span>ยังไม่ได้แนบไฟล์สัญญา (ไม่สามารถยืนยันได้)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinalConfirm}
+                disabled={isConfirmedSuccess}
+                className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
+                  isConfirmedSuccess
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-[#702d8a] hover:bg-purple-800 text-white hover:shadow-md'
+                }`}
+              >
+                {isConfirmedSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 stroke-[3]" />
+                    <span>ยืนยันการรับรองสัญญาสำเร็จ!</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>ยืนยันการตรวจสอบสัญญาซื้อขายไฟฟ้า</span>
+                  </>
+                )}
+              </button>
+            )}
 
             <p className="text-[10px] text-center text-slate-400">
-              เมื่อกดยืนยัน ระบบจะอัปเดตสถานะเป็น "เสร็จสิ้น (อนุมัติแล้ว)" และบันทึกประวัติการตรวจสอบทันที
+              {fileList.length === 0
+                ? 'กรุณาแนบไฟล์สัญญาก่อน เพื่อเปิดให้ตรวจสอบและรับรองสัญญา'
+                : 'เมื่อกดยืนยัน ระบบจะอัปเดตสถานะเป็น "เสร็จสิ้น (อนุมัติแล้ว)" และบันทึกประวัติการตรวจสอบทันที'}
             </p>
           </div>
         </section>
 
         {/* =========================================================================
             RIGHT COLUMN: หน้าสัญญาซื้อขายไฟฟ้า (Document Viewer)
+            ถ้ายังไม่ได้แนบไฟล์ หน้าตรวจสอบจะไม่โชว์ไฟล์ PDF ให้ตรวจ
            ========================================================================= */}
         <main className="flex-1 flex flex-col overflow-hidden bg-slate-200/90">
-          {/* Document Viewer Toolbar */}
-          <div className="bg-slate-800 text-slate-100 px-4 py-2.5 flex items-center justify-between text-xs shadow-inner shrink-0">
-            {/* Left toolbar info */}
-            <div className="flex items-center gap-2 truncate">
-              <FileText className="w-4 h-4 text-purple-300 shrink-0" />
-              <span className="font-semibold truncate text-slate-200">
-                {currentFile?.fileName || 'เอกสารสัญญาซื้อขายไฟฟ้า_กฟภ.pdf'}
-              </span>
-              <span className="text-[10px] bg-slate-700 text-purple-300 px-2 py-0.5 rounded font-mono hidden sm:inline">
-                {currentFile?.fileCategory || 'สัญญาหลัก'}
-              </span>
-            </div>
+          {fileList.length === 0 ? (
+            /* ถ้ายังไม่ได้แนบไฟล์ จะไม่โชว์ไฟล์ PDF ให้ตรวจ */
+            <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-slate-100/90 overflow-y-auto">
+              <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200 shadow-xs">
+                  <FileX2 className="w-8 h-8 text-amber-600" />
+                </div>
 
-            {/* Middle pagination controls */}
-            <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-700">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="p-1 text-slate-300 hover:text-white disabled:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
-                title="หน้าก่อนหน้า"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <span className="font-mono text-xs text-slate-200 font-semibold px-1">
-                หน้า {currentPage} / {totalPages}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="p-1 text-slate-300 hover:text-white disabled:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
-                title="หน้าถัดไป"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Right Zoom and Action tools */}
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-1 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => setZoomLevel((z) => Math.max(70, z - 10))}
-                  className="p-1 text-slate-300 hover:text-white cursor-pointer"
-                  title="ย่อขนาด"
-                >
-                  <ZoomOut className="w-3.5 h-3.5" />
-                </button>
-                <span className="font-mono text-[11px] text-slate-300 px-1">{zoomLevel}%</span>
-                <button
-                  type="button"
-                  onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
-                  className="p-1 text-slate-300 hover:text-white cursor-pointer"
-                  title="ขยายขนาด"
-                >
-                  <ZoomIn className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleDownloadFile}
-                className="p-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                title="ดาวน์โหลดไฟล์เอกสาร"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="hidden md:inline text-[11px]">ดาวน์โหลด</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Document Canvas Container */}
-          <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start">
-            {/* The Document Paper (Simulated High-Fidelity Official PEA Power Purchase Agreement) */}
-            <div
-              style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
-              className="bg-white rounded-sm shadow-2xl border border-slate-300 w-full max-w-[800px] min-h-[1100px] p-8 sm:p-12 text-slate-900 font-serif relative transition-transform duration-100 flex flex-col justify-between"
-            >
-              {/* Document Header (Emblem & Official Header) */}
-              <div>
-                {/* Official PEA Header */}
-                <div className="flex flex-col items-center text-center border-b-2 border-slate-800 pb-5 mb-6">
-                  {/* PEA Emblem placeholder */}
-                  <div className="w-14 h-14 rounded-full bg-[#702d8a] text-white flex items-center justify-center font-bold text-xs shadow-md mb-2">
-                    <span className="tracking-tighter">PEA</span>
-                  </div>
-                  <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950">
-                    สัญญาซื้อขายไฟฟ้า
-                  </h1>
-                  <h2 className="text-sm font-semibold text-slate-800 mt-1">
-                    การไฟฟ้าส่วนภูมิภาค (PROVINCIAL ELECTRICITY AUTHORITY)
-                  </h2>
-                  <p className="text-xs text-slate-600 font-sans mt-0.5">
-                    สัญญาเลขที่: <span className="font-mono font-bold text-[#702d8a]">{contract?.contractNumber || `PPA-PEA-${consumer.utilityCode}/0114`}</span>
+                <div className="space-y-2">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                    ยังไม่ได้แนบไฟล์สัญญา
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    ระบบจะไม่แสดงหน้าสัญญา PDF สำหรับการตรวจสอบ เนื่องจากยังไม่มีการแนบไฟล์สัญญาซื้อขายไฟฟ้าหรือเอกสารประกอบของผู้ใช้ไฟฟ้ารายนี้
                   </p>
                 </div>
 
-                {/* Contract Body Text (Dynamic based on selected consumer) */}
-                <div className="text-xs sm:text-sm leading-relaxed space-y-4 font-sans text-slate-800">
-                  <p className="text-right text-xs text-slate-600">
-                    ทำที่: <span className="font-semibold text-slate-900">{consumer.utility}</span>
-                  </p>
-                  <p className="text-right text-xs text-slate-600">
-                    วันที่: <span className="font-mono font-semibold text-slate-900">{contract?.contractDate || '2026-01-15'}</span>
-                  </p>
-
-                  <p className="text-justify indent-8">
-                    สัญญานี้ทำขึ้นระหว่าง <strong>การไฟฟ้าส่วนภูมิภาค</strong> โดย{' '}
-                    <span className="underline decoration-slate-400 font-semibold text-purple-900">
-                      {consumer.signingAuthority === 'ผชก.'
-                        ? 'ผู้ช่วยผู้ว่าการการไฟฟ้าส่วนภูมิภาค (ผชก.)'
-                        : consumer.signingAuthority === 'อฝ.สบ.'
-                        ? 'ผู้อำนวยการฝ่ายสัญญาและบริการระบบจำหน่าย (อฝ.สบ.)'
-                        : 'ผู้จัดการการไฟฟ้าส่วนภูมิภาค (ผจก.)'}
-                    </span>{' '}
-                    ผู้มีอำนาจลงนามผูกพันการไฟฟ้าส่วนภูมิภาค ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้จำหน่าย"</strong> ฝ่ายหนึ่ง
-                  </p>
-
-                  <p className="text-justify indent-8">
-                    กับ <strong>{consumer.consumerName || consumer.location.split(' ')[0]}</strong> โดย{' '}
-                    <span className="underline decoration-slate-400 font-semibold">
-                      {consumer.authorizedSignatory}
-                    </span>{' '}
-                    ตั้งอยู่ ณ เลขที่ {consumer.location} ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้ใช้ไฟฟ้า"</strong> อีกฝ่ายหนึ่ง
-                  </p>
-
-                  {/* Highlighted Specifications Box */}
-                  <div className="my-5 p-4 rounded-lg bg-purple-50/60 border border-purple-200 text-xs space-y-2">
-                    <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-purple-700" />
-                      <span>ข้อกำหนดทางเทคนิคและการจำหน่ายไฟฟ้า (Technical Specifications)</span>
-                    </h5>
-                    <div className="grid grid-cols-2 gap-2 text-slate-700 font-mono text-[11px]">
-                      <div>
-                        หมายเลขผู้ใช้ไฟฟ้า (CA): <strong>{consumer.accountNumber}</strong>
-                      </div>
-                      <div>
-                        หมายเลขการติดตั้ง: <strong>{consumer.installationNumber}</strong>
-                      </div>
-                      <div>
-                        พิกัดแรงดันไฟฟ้า: <strong className="text-amber-800">{consumer.voltageLevel}</strong>
-                      </div>
-                      <div>
-                        ขนาดกำลังหม้อแปลง: <strong className="text-purple-900">{consumer.transformerSize}</strong>
-                      </div>
-                      <div>
-                        กำลังไฟฟ้าที่ขอใช้: <strong>{contract?.capacityKW || 1500} kW</strong>
-                      </div>
-                      <div>
-                        วงเงินหลักประกันสัญญา: <strong>{formatCurrency(contract?.securityDeposit || 1000000)}</strong>
-                      </div>
-                    </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">หมายเลขผู้ใช้ไฟฟ้า (CA):</span>
+                    <span className="font-mono font-bold text-slate-900">{consumer.accountNumber}</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">การไฟฟ้า (กฟฟ.):</span>
+                    <span className="font-medium text-slate-900">{consumer.utility} ({consumer.utilityCode})</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">สถานที่ใช้ไฟฟ้า:</span>
+                    <span className="font-medium text-slate-700 truncate max-w-[200px]" title={consumer.location}>
+                      {consumer.location}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                    <span className="text-slate-500">สถานะเอกสาร:</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      <span>ยังไม่แนบไฟล์สัญญา</span>
+                    </span>
+                  </div>
+                </div>
 
-                  <p className="text-justify indent-8">
-                    คู่สัญญาทั้งสองฝ่ายได้ตกลงทำสัญญาซื้อขายไฟฟ้า โดยผู้จำหน่ายตกลงจำหน่ายไฟฟ้าให้แก่ผู้ใช้ไฟฟ้า และผู้ใช้ไฟฟ้าตกลงรับซื้อไฟฟ้าจากผู้จำหน่าย ณ จุดส่งมอบไฟฟ้าตามระดับแรงดัน <strong>{consumer.voltageLevel}</strong> และขนาดหม้อแปลง <strong>{consumer.transformerSize}</strong> ภายใต้ระเบียบและข้อกำหนดการใช้ไฟฟ้าของการไฟฟ้าส่วนภูมิภาคทุกประการ
-                  </p>
-
-                  <p className="text-justify indent-8">
-                    สัญญานี้มีผลบังคับใช้ตั้งแต่วันที่ <strong>{contract?.effectiveDate || '2026-02-01'}</strong> ถึงวันที่ <strong>{contract?.expireDate || '2031-01-31'}</strong> และมีเอกสารแนบท้ายสัญญาจำนวน <strong>{fileList.length} รายการ</strong> ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้
-                  </p>
+                <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+                  {onOpenUploadModal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenUploadModal(consumer);
+                      }}
+                      className="flex-1 py-2.5 px-4 bg-[#702d8a] hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <FilePlus className="w-4 h-4" />
+                      <span>ไปหน้าเพิ่มไฟล์สัญญา</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    ปิดหน้าต่าง
+                  </button>
                 </div>
               </div>
-
-              {/* Document Signatures Area */}
-              <div className="pt-10 mt-8 border-t border-slate-300">
-                <div className="grid grid-cols-2 gap-8 text-center text-xs font-sans">
-                  {/* PEA Signatory */}
-                  <div className="space-y-2">
-                    <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้จำหน่าย</p>
-                    <p className="font-bold text-slate-900">
-                      ( {consumer.utility} )
-                    </p>
-                    <p className="text-purple-800 font-medium text-[11px]">
-                      ตำแหน่ง: {consumer.signingAuthority || 'ผจก.'} ปฏิบัติงานแทนผู้ว่าการการไฟฟ้าส่วนภูมิภาค
-                    </p>
-                    <div className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>ตรวจรับรองเอกสารสัญญาแล้ว</span>
-                    </div>
-                  </div>
-
-                  {/* Consumer Signatory */}
-                  <div className="space-y-2">
-                    <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้ใช้ไฟฟ้า</p>
-                    <p className="font-bold text-slate-900">
-                      ( {consumer.authorizedSignatory.split('(')[0].trim()} )
-                    </p>
-                    <p className="text-slate-600 text-[11px]">
-                      {consumer.signatoryPosition || 'กรรมการผู้มีอำนาจลงนาม'}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      {consumer.consumerName || consumer.location.split(' ')[0]}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer Watermark & Page Number */}
-                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-6 mt-6 border-t border-slate-200 font-sans">
-                  <span>ระบบบริหารจัดการสัญญาซื้อขายไฟฟ้า กฟภ. (PLMS)</span>
-                  <span className="font-mono">
-                    หน้า {currentPage} จาก {totalPages} หน้า
+            </div>
+          ) : (
+            <>
+              {/* Document Viewer Toolbar */}
+              <div className="bg-slate-800 text-slate-100 px-4 py-2.5 flex items-center justify-between text-xs shadow-inner shrink-0">
+                {/* Left toolbar info */}
+                <div className="flex items-center gap-2 truncate">
+                  <FileText className="w-4 h-4 text-purple-300 shrink-0" />
+                  <span className="font-semibold truncate text-slate-200">
+                    {currentFile?.fileName || 'เอกสารสัญญาซื้อขายไฟฟ้า_กฟภ.pdf'}
                   </span>
-                  <span>รหัสตรวจสอบ: PEA-VFY-{consumer.utilityCode}-{consumer.accountNumber.slice(-4)}</span>
+                  <span className="text-[10px] bg-slate-700 text-purple-300 px-2 py-0.5 rounded font-mono hidden sm:inline">
+                    {currentFile?.fileCategory || 'สัญญาหลัก'}
+                  </span>
+                </div>
+
+                {/* Middle pagination controls */}
+                <div className="flex items-center gap-2 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="p-1 text-slate-300 hover:text-white disabled:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
+                    title="หน้าก่อนหน้า"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <span className="font-mono text-xs text-slate-200 font-semibold px-1">
+                    หน้า {currentPage} / {totalPages}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="p-1 text-slate-300 hover:text-white disabled:text-slate-600 cursor-pointer disabled:cursor-not-allowed"
+                    title="หน้าถัดไป"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Right Zoom and Action tools */}
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setZoomLevel((z) => Math.max(70, z - 10))}
+                      className="p-1 text-slate-300 hover:text-white cursor-pointer"
+                      title="ย่อขนาด"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-mono text-[11px] text-slate-300 px-1">{zoomLevel}%</span>
+                    <button
+                      type="button"
+                      onClick={() => setZoomLevel((z) => Math.min(150, z + 10))}
+                      className="p-1 text-slate-300 hover:text-white cursor-pointer"
+                      title="ขยายขนาด"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadFile}
+                    className="p-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                    title="ดาวน์โหลดไฟล์เอกสาร"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline text-[11px]">ดาวน์โหลด</span>
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
+
+              {/* Document Canvas Container */}
+              <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center items-start">
+                {/* The Document Paper (Simulated High-Fidelity Official PEA Power Purchase Agreement) */}
+                <div
+                  style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center' }}
+                  className="bg-white rounded-sm shadow-2xl border border-slate-300 w-full max-w-[800px] min-h-[1100px] p-8 sm:p-12 text-slate-900 font-serif relative transition-transform duration-100 flex flex-col justify-between"
+                >
+                  {/* Document Header (Emblem & Official Header) */}
+                  <div>
+                    {/* Official PEA Header */}
+                    <div className="flex flex-col items-center text-center border-b-2 border-slate-800 pb-5 mb-6">
+                      {/* PEA Emblem placeholder */}
+                      <div className="w-14 h-14 rounded-full bg-[#702d8a] text-white flex items-center justify-center font-bold text-xs shadow-md mb-2">
+                        <span className="tracking-tighter">PEA</span>
+                      </div>
+                      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950">
+                        สัญญาซื้อขายไฟฟ้า
+                      </h1>
+                      <h2 className="text-sm font-semibold text-slate-800 mt-1">
+                        การไฟฟ้าส่วนภูมิภาค (PROVINCIAL ELECTRICITY AUTHORITY)
+                      </h2>
+                      <p className="text-xs text-slate-600 font-sans mt-0.5">
+                        สัญญาเลขที่: <span className="font-mono font-bold text-[#702d8a]">{contract?.contractNumber || `PPA-PEA-${consumer.utilityCode}/0114`}</span>
+                      </p>
+                    </div>
+
+                    {/* Contract Body Text (Dynamic based on selected consumer) */}
+                    <div className="text-xs sm:text-sm leading-relaxed space-y-4 font-sans text-slate-800">
+                      <p className="text-right text-xs text-slate-600">
+                        ทำที่: <span className="font-semibold text-slate-900">{consumer.utility}</span>
+                      </p>
+                      <p className="text-right text-xs text-slate-600">
+                        วันที่: <span className="font-mono font-semibold text-slate-900">{contract?.contractDate || '2026-01-15'}</span>
+                      </p>
+
+                      <p className="text-justify indent-8">
+                        สัญญานี้ทำขึ้นระหว่าง <strong>การไฟฟ้าส่วนภูมิภาค</strong> โดย{' '}
+                        <span className="underline decoration-slate-400 font-semibold text-purple-900">
+                          {consumer.signingAuthority === 'ผชก.'
+                            ? 'ผู้ช่วยผู้ว่าการการไฟฟ้าส่วนภูมิภาค (ผชก.)'
+                            : consumer.signingAuthority === 'อฝ.สบ.'
+                            ? 'ผู้อำนวยการฝ่ายสัญญาและบริการระบบจำหน่าย (อฝ.สบ.)'
+                            : 'ผู้จัดการการไฟฟ้าส่วนภูมิภาค (ผจก.)'}
+                        </span>{' '}
+                        ผู้มีอำนาจลงนามผูกพันการไฟฟ้าส่วนภูมิภาค ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้จำหน่าย"</strong> ฝ่ายหนึ่ง
+                      </p>
+
+                      <p className="text-justify indent-8">
+                        กับ <strong>{consumer.consumerName || consumer.location.split(' ')[0]}</strong> โดย{' '}
+                        <span className="underline decoration-slate-400 font-semibold">
+                          {consumer.authorizedSignatory}
+                        </span>{' '}
+                        ตั้งอยู่ ณ เลขที่ {consumer.location} ซึ่งต่อไปในสัญญานี้เรียกว่า <strong>"ผู้ใช้ไฟฟ้า"</strong> อีกฝ่ายหนึ่ง
+                      </p>
+
+                      {/* Highlighted Specifications Box */}
+                      <div className="my-5 p-4 rounded-lg bg-purple-50/60 border border-purple-200 text-xs space-y-2">
+                        <h5 className="font-bold text-purple-900 text-xs flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-purple-700" />
+                          <span>ข้อกำหนดทางเทคนิคและการจำหน่ายไฟฟ้า (Technical Specifications)</span>
+                        </h5>
+                        <div className="grid grid-cols-2 gap-2 text-slate-700 font-mono text-[11px]">
+                          <div>
+                            หมายเลขผู้ใช้ไฟฟ้า (CA): <strong>{consumer.accountNumber}</strong>
+                          </div>
+                          <div>
+                            หมายเลขการติดตั้ง: <strong>{consumer.installationNumber}</strong>
+                          </div>
+                          <div>
+                            พิกัดแรงดันไฟฟ้า: <strong className="text-amber-800">{consumer.voltageLevel}</strong>
+                          </div>
+                          <div>
+                            ขนาดกำลังหม้อแปลง: <strong className="text-purple-900">{consumer.transformerSize}</strong>
+                          </div>
+                          <div>
+                            วงเงินหลักประกันสัญญา: <strong>{formatCurrency(contract?.securityDeposit || 1000000)}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-justify indent-8">
+                        คู่สัญญาทั้งสองฝ่ายได้ตกลงทำสัญญาซื้อขายไฟฟ้า โดยผู้จำหน่ายตกลงจำหน่ายไฟฟ้าให้แก่ผู้ใช้ไฟฟ้า และผู้ใช้ไฟฟ้าตกลงรับซื้อไฟฟ้าจากผู้จำหน่าย ณ จุดส่งมอบไฟฟ้าตามระดับแรงดัน <strong>{consumer.voltageLevel}</strong> และขนาดหม้อแปลง <strong>{consumer.transformerSize}</strong> ภายใต้ระเบียบและข้อกำหนดการใช้ไฟฟ้าของการไฟฟ้าส่วนภูมิภาคทุกประการ
+                      </p>
+
+                      <p className="text-justify indent-8">
+                        สัญญานี้มีผลจนถึงวันที่ <strong>{contract?.expireDate || '2031-01-31'}</strong> และมีเอกสารแนบท้ายสัญญาจำนวน <strong>{fileList.length} รายการ</strong> ซึ่งถือเป็นส่วนหนึ่งของสัญญานี้
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Document Signatures Area */}
+                  <div className="pt-10 mt-8 border-t border-slate-300">
+                    <div className="grid grid-cols-2 gap-8 text-center text-xs font-sans">
+                      {/* PEA Signatory */}
+                      <div className="space-y-2">
+                        <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้จำหน่าย</p>
+                        <p className="font-bold text-slate-900">
+                          ( {consumer.utility} )
+                        </p>
+                        <p className="text-purple-800 font-medium text-[11px]">
+                          ตำแหน่ง: {consumer.signingAuthority || 'ผจก.'} ปฏิบัติงานแทนผู้ว่าการการไฟฟ้าส่วนภูมิภาค
+                        </p>
+                        <div className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>ตรวจรับรองเอกสารสัญญาแล้ว</span>
+                        </div>
+                      </div>
+
+                      {/* Consumer Signatory */}
+                      <div className="space-y-2">
+                        <p className="text-slate-500 text-[11px]">ลงชื่อ ........................................................... ผู้ใช้ไฟฟ้า</p>
+                        <p className="font-bold text-slate-900">
+                          ( {consumer.authorizedSignatory.split('(')[0].trim()} )
+                        </p>
+                        <p className="text-slate-600 text-[11px]">
+                          {consumer.signatoryPosition || 'กรรมการผู้มีอำนาจลงนาม'}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {consumer.consumerName || consumer.location.split(' ')[0]}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Footer Watermark & Page Number */}
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-6 mt-6 border-t border-slate-200 font-sans">
+                      <span>ระบบบริหารจัดการสัญญาซื้อขายไฟฟ้า กฟภ. (PLMS)</span>
+                      <span className="font-mono">
+                        หน้า {currentPage} จาก {totalPages} หน้า
+                      </span>
+                      <span>รหัสตรวจสอบ: PEA-VFY-{consumer.utilityCode}-{consumer.accountNumber.slice(-4)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </main>
       </div>
     </div>

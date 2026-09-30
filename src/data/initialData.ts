@@ -21,7 +21,7 @@ export const INITIAL_CONSUMERS: ElectricityConsumer[] = [
     verifiedFilesCount: 4,
     contractDetails: {
       contractNumber: 'PPA-PEA-H01101/0114',
-      contractType: 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)',
+      contractType: 'สัญญาฉบับหลัก',
       contractDate: '2026-01-15',
       effectiveDate: '2026-02-01',
       expireDate: '2029-01-31',

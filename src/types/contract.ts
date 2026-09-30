@@ -69,7 +69,7 @@ export interface ContractDetails {
   contractNumber: string; // เลขที่สัญญา
   contractType: string; // ประเภทสัญญาซื้อขายไฟฟ้า
   contractDate: string; // วันที่ลงนาม / วันที่ทำสัญญา
-  effectiveDate: string; // วันที่เริ่มมีผล
+  effectiveDate?: string; // วันที่เริ่มมีผล (นำออกจากหน้าจอตรวจสอบสัญญาตามคำสั่ง)
   expireDate: string; // วันสิ้นสุดสัญญา
   capacityKW?: number; // กำลังผลิต/ความต้องการพลังไฟฟ้า (kW/MW)
   securityDeposit?: number; // วงเงินหลักประกันสัญญา (บาท)

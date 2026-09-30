@@ -299,23 +299,36 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           <span>เพิ่มไฟล์สัญญา</span>
                         </button>
 
-                        {/* NEW: ตรวจสอบสัญญา */}
-                        {onVerifyContract && (
-                          <button
-                            onClick={() => onVerifyContract(item)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border shadow-2xs transition-all duration-150 cursor-pointer whitespace-nowrap ${
-                              item.contractStatus === 'completed'
-                                ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border-emerald-300'
-                                : item.contractStatus === 'pending_review'
-                                ? 'text-purple-700 bg-purple-50 hover:bg-[#702d8a] hover:text-white border-purple-300 ring-1 ring-purple-300'
-                                : 'text-slate-700 bg-white hover:bg-slate-100 border-slate-300'
-                            }`}
-                            title="เปิดหน้าตรวจสอบสัญญาซื้อขายไฟฟ้า (แบบแยกหน้าจอ ซ้าย-ขวา)"
-                          >
-                            <FileCheck2 className="w-3.5 h-3.5" />
-                            <span>ตรวจสอบสัญญา</span>
-                          </button>
-                        )}
+                        {/* NEW: ตรวจสอบสัญญา (ถ้ายังไม่ตรวจเป็นสีเทา ถ้าตรวจแล้วเป็นสีเขียว) */}
+                        {onVerifyContract && (() => {
+                          const isVerified =
+                            item.contractStatus === 'completed' ||
+                            (item.attachedFilesCount > 0 &&
+                              item.verifiedFilesCount === item.attachedFilesCount);
+
+                          return (
+                            <button
+                              onClick={() => onVerifyContract(item)}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border shadow-2xs transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                                isVerified
+                                  ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border-emerald-300'
+                                  : 'text-slate-500 bg-slate-100 hover:bg-slate-200 hover:text-slate-700 border-slate-300'
+                              }`}
+                              title={
+                                isVerified
+                                  ? 'ตรวจสอบสัญญา (ตรวจแล้ว - สีเขียว)'
+                                  : 'ตรวจสอบสัญญา (ยังไม่ตรวจ - สีเทา)'
+                              }
+                            >
+                              <FileCheck2
+                                className={`w-3.5 h-3.5 ${
+                                  isVerified ? 'text-emerald-600' : 'text-slate-400'
+                                }`}
+                              />
+                              <span>ตรวจสอบสัญญา</span>
+                            </button>
+                          );
+                        })()}
 
                         {/* ดูสัญญา */}
                         {hasContractFile && (

@@ -191,23 +191,17 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="text-slate-400 block text-[11px]">ประเภทสัญญา</span>
-                  <span className="font-semibold text-slate-800">{contract.contractType}</span>
+                  <span className="font-semibold text-slate-800">
+                    {contract.contractType && contract.contractType !== 'สัญญาซื้อขายไฟฟ้าแรงดันปานกลาง-สูง (TOU)'
+                      ? contract.contractType
+                      : 'สัญญาฉบับหลัก'}
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <span className="text-slate-400 block text-[11px]">วันที่มีผลบังคับใช้</span>
-                    <span className="font-mono text-slate-800">{contract.effectiveDate || '-'}</span>
-                  </div>
-                  <div>
                     <span className="text-slate-400 block text-[11px]">วันสิ้นสุดสัญญา</span>
                     <span className="font-mono text-slate-800">{contract.expireDate || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">ความต้องการพลังไฟฟ้า (kW)</span>
-                    <span className="font-mono font-semibold text-slate-900 tabular-nums">
-                      {contract.capacityKW?.toLocaleString() || '-'} kW
-                    </span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[11px]">วงเงินหลักประกันสัญญา</span>
@@ -342,18 +336,34 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            {onVerifyContract && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onVerifyContract(consumer);
-                }}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-[#702d8a] hover:bg-purple-800 rounded-xl shadow-xs transition-colors cursor-pointer"
-              >
-                <FileCheck2 className="w-4 h-4" />
-                <span>ตรวจสอบสัญญา</span>
-              </button>
-            )}
+            {onVerifyContract && (() => {
+              const isVerified =
+                consumer.contractStatus === 'completed' ||
+                (consumer.attachedFilesCount > 0 &&
+                  consumer.verifiedFilesCount === consumer.attachedFilesCount);
+
+              return (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onVerifyContract(consumer);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border shadow-xs transition-colors cursor-pointer ${
+                    isVerified
+                      ? 'text-emerald-700 bg-emerald-50 hover:bg-emerald-600 hover:text-white border-emerald-300'
+                      : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-800 border-slate-300'
+                  }`}
+                  title={
+                    isVerified
+                      ? 'ตรวจสอบสัญญา (ตรวจแล้ว - สีเขียว)'
+                      : 'ตรวจสอบสัญญา (ยังไม่ตรวจ - สีเทา)'
+                  }
+                >
+                  <FileCheck2 className={`w-4 h-4 ${isVerified ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span>ตรวจสอบสัญญา</span>
+                </button>
+              );
+            })()}
 
             <button
               onClick={handleDownloadMock}
