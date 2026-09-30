@@ -19,18 +19,13 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
   const needsRevision = consumers.filter((c) => c.contractStatus === 'needs_revision').length;
   const completed = consumers.filter((c) => c.contractStatus === 'completed').length;
 
-  const totalTransformers = consumers.reduce((acc, curr) => {
-    const val = parseInt(curr.transformerSize.replace(/[^0-9]/g, ''), 10) || 0;
-    return acc + val;
-  }, 0);
-
   const cards = [
     {
       id: 'ทั้งหมด',
       title: 'ผู้ใช้ไฟฟ้าทั้งหมด',
       count: total,
       unit: 'ราย',
-      subtitle: `กำลังหม้อแปลงรวม ${totalTransformers.toLocaleString()} kVA`,
+      subtitle: '',
       icon: Building2,
       accent: 'text-sky-700',
       bgGradient: 'from-sky-50 to-white',
@@ -42,7 +37,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       title: 'แนบไฟล์สัญญาแล้ว',
       count: uploaded,
       unit: 'ฉบับ',
-      subtitle: 'พร้อมเข้าสู่กระบวนการตรวจรับ',
+      subtitle: '',
       icon: Files,
       accent: 'text-cyan-700',
       bgGradient: 'from-cyan-50/70 to-white',
@@ -54,7 +49,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       title: 'รอตรวจสอบไฟล์สัญญา',
       count: pendingReview,
       unit: 'ฉบับ',
-      subtitle: 'ต้องตรวจสอบพิกัดและเงื่อนไข',
+      subtitle: 'รอตรวจสอบการนำขึ้นข้อมูล',
       icon: FileClock,
       accent: 'text-amber-700',
       bgGradient: 'from-amber-50/60 to-white',
@@ -67,7 +62,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       title: 'รอแก้ไขข้อมูล',
       count: needsRevision,
       unit: 'ฉบับ',
-      subtitle: 'นำเข้าไม่ถูกต้อง ต้องแก้ไขข้อมูลใหม่',
+      subtitle: 'นำเข้าข้อมูลไม่ถูกต้อง รอการแก้ไข',
       icon: FileClock,
       accent: 'text-rose-700',
       bgGradient: 'from-rose-50/60 to-white',
@@ -81,7 +76,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       title: 'สัญญาเสร็จสิ้นสมบูรณ์',
       count: completed,
       unit: 'ฉบับ',
-      subtitle: 'ผ่านการอนุมัติและมีผลบังคับใช้',
+      subtitle: 'ผ่านการตรวจสอบการนำขึ้นข้อมูล',
       icon: FileCheck,
       accent: 'text-emerald-700',
       bgGradient: 'from-emerald-50/60 to-white',
@@ -131,7 +126,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
               </div>
 
               <div className="mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <span className="truncate">{card.subtitle}</span>
+                <span className="truncate">{card.subtitle || 'คลิกเพื่อดูรายการ'}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </div>
             </div>

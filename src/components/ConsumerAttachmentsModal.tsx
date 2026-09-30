@@ -10,7 +10,8 @@ import {
   Building2,
   Zap,
   MapPin,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertTriangle
 } from 'lucide-react';
 import { ElectricityConsumer, AttachedFile } from '../types/contract';
 import { getStatusLabel, getStatusStyle } from '../utils/formatters';
@@ -183,8 +184,8 @@ export const ConsumerAttachmentsModal: React.FC<ConsumerAttachmentsModalProps> =
                         <td className="py-3 px-4 font-medium text-slate-800">
                           <div className="flex items-start gap-2">
                             <FileText className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="flex items-center gap-1.5">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="font-semibold text-slate-900">{file.fileCategory}</span>
                                 {file.fileCategory === 'สัญญาแนบท้าย' && (
                                   <span className="text-[10px] bg-purple-100 text-[#702d8a] px-1.5 py-0.2 rounded font-bold">
@@ -196,6 +197,19 @@ export const ConsumerAttachmentsModal: React.FC<ConsumerAttachmentsModalProps> =
                                 <span className="text-[11px] text-purple-900 font-medium block mt-0.5">
                                   {file.fileDetails}
                                 </span>
+                              )}
+
+                              {/* แสดงหมายเหตุสิ่งที่ต้องแก้ไขให้ชัดเจน */}
+                              {(file.needsRevision || file.revisionNote) && (
+                                <div className="mt-1.5 p-2 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-0.5">
+                                  <div className="font-bold text-rose-800 flex items-center gap-1 text-[11px]">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                    <span>หมายเหตุจุดที่ต้องแก้ไข:</span>
+                                  </div>
+                                  <p className="text-[11px] text-rose-700 pl-4 font-normal leading-relaxed">
+                                    {file.revisionNote || 'กรุณาแก้ไขเอกสารและแนบฉบับใหม่'}
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -214,6 +228,11 @@ export const ConsumerAttachmentsModal: React.FC<ConsumerAttachmentsModalProps> =
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               <span>ตรวจแล้ว</span>
+                            </span>
+                          ) : file.needsRevision || file.revisionNote ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 animate-pulse">
+                              <AlertTriangle className="w-3 h-3 text-rose-600" />
+                              <span>ต้องแก้ไข</span>
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200">

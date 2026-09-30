@@ -19,9 +19,11 @@ import {
   Clock,
   Lock,
   Trash2,
+  RotateCcw,
+  AlertTriangle,
 } from 'lucide-react';
 import { ElectricityConsumer } from '../types/contract';
-import { getStatusLabel, getStatusStyle } from '../utils/formatters';
+import { getStatusLabel, getStatusStyle, getAuthorityBadgeStyle } from '../utils/formatters';
 
 interface ConsumerTableProps {
   consumers: ElectricityConsumer[];
@@ -30,6 +32,7 @@ interface ConsumerTableProps {
   onViewContract: (consumer: ElectricityConsumer) => void;
   onViewAttachments?: (consumer: ElectricityConsumer) => void;
   onVerifyContract?: (consumer: ElectricityConsumer) => void;
+  onConfirmRevision?: (consumer: ElectricityConsumer) => void;
   onDeleteConsumer?: (consumer: ElectricityConsumer) => void;
   canViewDetails?: boolean;
   canUploadFiles?: boolean;
@@ -46,6 +49,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
   onViewContract,
   onViewAttachments,
   onVerifyContract,
+  onConfirmRevision,
   onDeleteConsumer,
   canViewDetails = true,
   canUploadFiles = true,
@@ -137,7 +141,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                 หมายเลขผู้ใช้ไฟฟ้า
               </th>
               <th scope="col" className="py-3 px-3 text-xs font-semibold whitespace-nowrap">
-                การติดตั้ง
+                เลขที่สัญญา
               </th>
               <th scope="col" className="py-3 px-4 text-xs font-semibold min-w-[220px]">
                 สถานที่ใช้ไฟฟ้า
@@ -157,8 +161,10 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
               <th scope="col" className="py-3 px-3 text-xs font-semibold whitespace-nowrap text-center">
                 สถานะสัญญา
               </th>
-              <th scope="col" className="py-3 px-4 text-xs font-semibold text-center whitespace-nowrap bg-sky-50/50">
-                การจัดการสัญญา
+              <th scope="col" className="py-3 px-3 text-xs font-semibold text-left whitespace-nowrap bg-sky-50/70 border-l border-slate-200/80 min-w-[360px]">
+                <div className="flex items-center gap-1.5 text-sky-950 font-bold">
+                  <span>การจัดการสัญญา</span>
+                </div>
               </th>
             </tr>
           </thead>
@@ -223,9 +229,11 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                       </div>
                     </td>
 
-                    {/* การติดตั้ง */}
-                    <td className="py-3.5 px-3 font-mono text-slate-600 whitespace-nowrap align-middle">
-                      {item.installationNumber}
+                    {/* เลขที่สัญญา */}
+                    <td className="py-3.5 px-3 font-mono text-slate-700 whitespace-nowrap align-middle">
+                      <span className="font-semibold text-slate-800">
+                        {item.contractDetails?.contractNumber || item.installationNumber}
+                      </span>
                     </td>
 
                     {/* สถานที่ใช้ไฟฟ้า & ชื่อผู้ใช้ไฟฟ้า (คลิกดูไฟล์สัญญาแนบ) */}
@@ -279,12 +287,21 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                       </span>
                     </td>
 
-                    {/* อำนาจลงนาม */}
+                    {/* อำนาจลงนาม (ตามเกณฑ์ 22 kV < 2500 = ผจก, 22 kV >= 2500 = อฝ.สบ, 115 kV = ผชก) */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap align-middle">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                        <UserCheck className="w-3 h-3 text-amber-600" />
-                        <span>{item.authorizedSignatory}</span>
-                      </span>
+                      {(() => {
+                        const auth = item.signingAuthority || item.authorizedSignatory || 'ผจก.';
+                        const authStyle = getAuthorityBadgeStyle(auth);
+                        return (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${authStyle.badgeBg} ${authStyle.textColor} ${authStyle.borderColor}`}
+                            title={`${authStyle.fullTitle} | หม้อแปลง: ${item.transformerSize} (${item.voltageLevel})`}
+                          >
+                            <UserCheck className="w-3 h-3 opacity-80" />
+                            <span>{auth}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* ความคืบหน้าเอกสาร */}
@@ -324,38 +341,49 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           {item.contractDetails.contractNumber}
                         </div>
                       )}
+                      {item.contractStatus === 'needs_revision' && (
+                        <div
+                          className="text-[10px] text-rose-600 font-medium mt-1 truncate max-w-[140px] mx-auto flex items-center justify-center gap-1 cursor-help"
+                          title={`หมายเหตุแก้ไข: ${item.contractDetails?.reviewNotes || 'มีไฟล์ที่ต้องแก้ไข'}`}
+                        >
+                          <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                          <span className="truncate">
+                            {item.contractDetails?.reviewNotes ? item.contractDetails.reviewNotes : 'มีไฟล์ต้องแก้ไข'}
+                          </span>
+                        </div>
+                      )}
                     </td>
 
-                    {/* การจัดการสัญญา: เพิ่มไฟล์ / ตรวจสอบ / ดูรายละเอียด */}
-                    <td className="py-3.5 px-4 whitespace-nowrap align-middle text-center bg-sky-50/20">
-                      <div className="flex items-center justify-center gap-1.5">
-                        {/* 1. ปุ่ม เพิ่มไฟล์สัญญา (ตามสิทธิ์ canUploadFiles) */}
+                    {/* การจัดการสัญญา: จัดระเบียบปุ่มให้เรียงตรงกันแนวตั้งทุกแถว ไม่โย้เย้ */}
+                    <td className="py-2.5 px-3 whitespace-nowrap align-middle bg-sky-50/15 border-l border-slate-100">
+                      <div className="flex items-center justify-start gap-1.5 min-w-max">
+                        {/* 1. ปุ่ม เพิ่มไฟล์สัญญา (ขนาดคงที่ w-[114px] h-8 เรียงตรงกันทุกแถว) */}
                         {canUploadFiles ? (
                           <button
                             onClick={() => onOpenUploadModal(item)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-600 hover:text-white border border-sky-300 rounded-lg shadow-2xs transition-all duration-150 cursor-pointer whitespace-nowrap"
-                            title="เพิ่มไฟล์สัญญา"
+                            className="inline-flex items-center justify-center gap-1.5 w-[114px] h-8 text-xs font-semibold text-sky-700 bg-sky-50/90 hover:bg-sky-600 hover:text-white border border-sky-300 hover:border-sky-600 rounded-lg shadow-2xs transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0"
+                            title="เพิ่ม/แก้ไขไฟล์สัญญา"
                           >
-                            <FilePlus className="w-3.5 h-3.5" />
+                            <FilePlus className="w-3.5 h-3.5 shrink-0" />
                             <span>เพิ่มไฟล์สัญญา</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => onPermissionDenied?.('อัพโหลดไฟล์สัญญา')}
-                            className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 w-[114px] h-8 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap shrink-0"
                             title="ไม่มีสิทธิ์อัพโหลดไฟล์สัญญา"
                           >
-                            <Lock className="w-3 h-3 text-slate-400" />
-                            <span>เพิ่มไฟล์</span>
+                            <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>เพิ่มไฟล์สัญญา</span>
                           </button>
                         )}
 
-                        {/* 2. ตรวจสอบ/รับรองข้อมูล (ถ้ายังไม่ตรวจเป็นสีเทา ถ้าตรวจแล้วเป็นสีเขียว) */}
+                        {/* 2. ตรวจสอบ/รับรองข้อมูล (ขนาดคงที่ w-[152px] h-8 เรียงตรงกันทุกแถว) */}
                         {onVerifyContract && (
                           canVerifyContract ? (
                             <button
                               onClick={() => onVerifyContract(item)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border shadow-xs transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                              className={`inline-flex items-center justify-center gap-1.5 w-[152px] h-8 text-xs font-semibold rounded-lg border shadow-xs transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 ${
                                 isVerified
                                   ? 'text-white bg-emerald-600 hover:bg-emerald-700 border-emerald-600 font-bold'
                                   : 'text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border-slate-300'
@@ -367,7 +395,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                               }
                             >
                               <FileCheck2
-                                className={`w-3.5 h-3.5 ${
+                                className={`w-3.5 h-3.5 shrink-0 ${
                                   isVerified ? 'text-white stroke-[2.5]' : 'text-slate-400'
                                 }`}
                               />
@@ -376,22 +404,21 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           ) : (
                             <button
                               onClick={() => onPermissionDenied?.('ตรวจสอบ/รับรองข้อมูล')}
-                              className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap"
+                              className="inline-flex items-center justify-center gap-1.5 w-[152px] h-8 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap shrink-0"
                               title="ไม่มีสิทธิ์ตรวจสอบ/รับรองข้อมูล"
                             >
-                              <Lock className="w-3 h-3 text-slate-400" />
-                              <span>ตรวจสอบ</span>
+                              <Lock className="w-3 h-3 text-slate-400 shrink-0" />
+                              <span>ตรวจสอบ/รับรองข้อมูล</span>
                             </button>
                           )
                         )}
 
-                        {/* 3. ดูรายละเอียดสัญญาฉบับเต็ม: ไฮไลท์สำคัญตามคำสั่ง
-                            "หรือใครแค่เข้ามาดูหน้า Dashboard และทะเบียนสัญญาได้ แต่กดเข้าไปดูรายละเอียดไม่ได้" */}
-                        {hasContractFile && (
+                        {/* 3. ดูรายละเอียดสัญญาฉบับเต็ม (ขนาดคงที่ w-8 h-8 แสดงตำแหน่งเดียวกันเสมอเพื่อไม่ให้แถวแกว่ง) */}
+                        {hasContractFile ? (
                           canViewDetails ? (
                             <button
                               onClick={() => handleDetailsClick(item)}
-                              className="p-1.5 text-slate-500 hover:text-sky-700 hover:bg-sky-100 rounded-lg transition-colors cursor-pointer"
+                              className="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-sky-700 hover:bg-sky-100 bg-white border border-slate-200 rounded-lg transition-colors cursor-pointer shrink-0 shadow-2xs"
                               title="กดดูรายละเอียดสัญญาฉบับเต็ม"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -399,15 +426,36 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           ) : (
                             <button
                               onClick={() => handleDetailsClick(item)}
-                              className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer border border-rose-200 bg-rose-50/50"
+                              className="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 hover:bg-rose-50 border border-rose-200 bg-rose-50/50 rounded-lg transition-colors cursor-pointer shrink-0"
                               title="ล็อค: ไม่มีสิทธิ์กดเข้าไปดูรายละเอียดสัญญา"
                             >
                               <Lock className="w-3.5 h-3.5" />
                             </button>
                           )
+                        ) : (
+                          <button
+                            disabled
+                            className="w-8 h-8 flex items-center justify-center text-slate-300 bg-slate-50 border border-slate-200/60 rounded-lg cursor-not-allowed shrink-0"
+                            title="ยังไม่มีไฟล์สัญญาแนบในระบบ"
+                          >
+                            <Eye className="w-3.5 h-3.5 opacity-30" />
+                          </button>
                         )}
 
-                        {/* 4. สิทธิ์ลบข้อมูล (Delete action) */}
+                        {/* 4. ปุ่ม ยืนยันการแก้ไข (เฉพาะกรณีสถานะรอแก้ไขข้อมูล วางต่อท้ายเพื่อให้ปุ่ม 1-3 ตรงกันเป๊ะทุกแถว) */}
+                        {item.contractStatus === 'needs_revision' && onConfirmRevision && (
+                          <button
+                            type="button"
+                            onClick={() => onConfirmRevision(item)}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 h-8 text-xs font-bold text-white bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 active:scale-95 rounded-lg shadow-xs transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0"
+                            title="กดยืนยันการแก้ไขข้อมูล เพื่อเด้งกลับไปสถานะรอตรวจสอบใหม่"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>ยืนยันการแก้ไข</span>
+                          </button>
+                        )}
+
+                        {/* 5. สิทธิ์ลบข้อมูล (Delete action) */}
                         {canDeleteData && onDeleteConsumer && (
                           <button
                             onClick={() => {
@@ -415,7 +463,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                                 onDeleteConsumer(item);
                               }
                             }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 rounded-lg transition-colors cursor-pointer shrink-0"
                             title="ลบข้อมูลสัญญา"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

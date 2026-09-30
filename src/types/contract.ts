@@ -54,14 +54,16 @@ export const SIGNING_AUTHORITIES: { value: SigningAuthority; label: string; desc
 export interface AttachedFile {
   id: string;
   fileName: string;
-  fileCategory: string; // เช่น สัญญาซื้อขายไฟฟ้าหลัก, หนังสือค้ำประกัน, แผนผังระบบไฟฟ้า, ผลทดสอบหม้อแปลง
-  fileDetails?: string; // รายละเอียดเอกสาร
+  fileCategory: string; // สัญญาหลัก หรือ สัญญาแนบท้าย (มีเฉพาะ 2 ประเภทนี้เท่านั้น)
+  fileDetails?: string; // รายละเอียดเอกสารสัญญา เช่น สัญญาซื้อขายไฟฟ้าหลัก, สัญญาแนบท้ายลดขนาดหม้อแปลง
   fileSize: string;
   pageCount?: number; // จำนวนหน้า (ตามระบบ PLMS กฟภ.)
   uploadedAt: string;
   isVerified: boolean;
   verifiedBy?: string;
   verifiedAt?: string;
+  needsRevision?: boolean; // ไฟล์นี้มีจุดที่ต้องแก้ไขหรือไม่
+  revisionNote?: string; // หมายเหตุสิ่งที่ต้องแก้ไข ระบุจุดที่ต้องแก้ไขให้ชัดเจน
 }
 
 export interface ElectricityConsumer {
@@ -90,11 +92,11 @@ export interface ElectricityConsumer {
 export interface ContractDetails {
   contractNumber: string; // เลขที่สัญญา
   contractType: string; // ประเภทสัญญาซื้อขายไฟฟ้า
-  contractDate: string; // วันที่ลงนาม / วันที่ทำสัญญา
-  effectiveDate?: string; // วันที่เริ่มมีผล (นำออกจากหน้าจอตรวจสอบสัญญาตามคำสั่ง)
-  expireDate: string; // วันสิ้นสุดสัญญา
+  contractDate: string; // วันที่ลงนามสัญญา
+  effectiveDate?: string; // วันที่เริ่มมีผล
+  expireDate: string; // วันที่ลงนามสัญญา (หรือวันสิ้นสุดเดิม)
   capacityKW?: number; // กำลังผลิต/ความต้องการพลังไฟฟ้า (kW/MW)
-  securityDeposit?: number; // วงเงินหลักประกันสัญญา (บาท)
+  securityDeposit?: number; // เงินค้ำประกันการใช้ไฟฟ้า (บาท)
   signingAuthority?: SigningAuthority; // อำนาจ (ผจก., อฝ.สบ., ผชก.)
   fileName?: string; // ชื่อไฟล์สัญญาหลักที่แนบ
   fileSize?: string;

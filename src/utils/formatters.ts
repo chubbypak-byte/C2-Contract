@@ -1,4 +1,90 @@
-import { ContractStatus } from '../types/contract';
+import { ContractStatus, SigningAuthority } from '../types/contract';
+
+/**
+ * คำนวณระดับอำนาจการลงนามสัญญา กฟภ. ตามเกณฑ์ขนาดหม้อแปลงและแรงดัน:
+ * - 22 kV และขนาดหม้อแปลง <= 2,500 kVA (รวม 22 kV = 2,500 kVA) = อำนาจ ผจก.
+ * - 22 kV และขนาดหม้อแปลง > 2,500 kVA = อำนาจ อฝ.สบ.
+ * - 115 kV = อำนาจ ผชก.
+ */
+export function calculateSigningAuthority(
+  voltageLevel: string,
+  transformerSize: string | number
+): SigningAuthority {
+  // 115 kV = อำนาจ ผชก.
+  if (voltageLevel && voltageLevel.includes('115')) {
+    return 'ผชก.';
+  }
+
+  // แยกค่าตัวเลข kVA ออกมา (รองรับทั้ง "1,250 kVA", "2500", 2500)
+  const sizeNum =
+    typeof transformerSize === 'number'
+      ? transformerSize
+      : parseInt(String(transformerSize).replace(/[^0-9]/g, ''), 10) || 0;
+
+  // 22 kV > 2,500 = อำนาจ อฝ.สบ.
+  if (sizeNum > 2500) {
+    return 'อฝ.สบ.';
+  }
+
+  // 22 kV <= 2,500 (22 kV = 2500 อำนาจ ผจก.)
+  return 'ผจก.';
+}
+
+export function getAuthorityRuleText(
+  voltageLevel: string,
+  transformerSize: string | number
+): string {
+  if (voltageLevel && voltageLevel.includes('115')) {
+    return 'ระบบแรงดัน 115 kV → อำนาจ ผชก.';
+  }
+
+  const sizeNum =
+    typeof transformerSize === 'number'
+      ? transformerSize
+      : parseInt(String(transformerSize).replace(/[^0-9]/g, ''), 10) || 0;
+
+  if (sizeNum > 2500) {
+    return `แรงดัน 22 kV หม้อแปลง ${sizeNum.toLocaleString()} kVA (> 2,500 kVA) → อำนาจ อฝ.สบ.`;
+  }
+
+  return `แรงดัน 22 kV หม้อแปลง ${sizeNum.toLocaleString()} kVA (≤ 2,500 kVA) → อำนาจ ผจก.`;
+}
+
+export function getAuthorityBadgeStyle(authority?: string): {
+  badgeBg: string;
+  textColor: string;
+  borderColor: string;
+  label: string;
+  fullTitle: string;
+} {
+  switch (authority) {
+    case 'ผชก.':
+      return {
+        badgeBg: 'bg-purple-50',
+        textColor: 'text-purple-800',
+        borderColor: 'border-purple-200',
+        label: 'ผชก.',
+        fullTitle: 'ผู้ช่วยผู้ว่าการ (115 kV)',
+      };
+    case 'อฝ.สบ.':
+      return {
+        badgeBg: 'bg-amber-50',
+        textColor: 'text-amber-800',
+        borderColor: 'border-amber-200',
+        label: 'อฝ.สบ.',
+        fullTitle: 'ผู้อำนวยการฝ่าย (22 kV > 2,500 kVA)',
+      };
+    case 'ผจก.':
+    default:
+      return {
+        badgeBg: 'bg-sky-50',
+        textColor: 'text-sky-800',
+        borderColor: 'border-sky-200',
+        label: 'ผจก.',
+        fullTitle: 'ผู้จัดการ (22 kV ≤ 2,500 kVA)',
+      };
+  }
+}
 
 export function getStatusLabel(status: ContractStatus): string {
   switch (status) {

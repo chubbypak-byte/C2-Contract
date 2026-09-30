@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Building2, Zap, User, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Building2, Zap, User, FileText, CheckCircle2, AlertCircle, Info, Sparkles, ShieldCheck } from 'lucide-react';
 import {
   ElectricityConsumer,
   UtilityProvider,
@@ -12,6 +12,7 @@ import {
   CONTRACT_TYPES,
   ContractType
 } from '../types/contract';
+import { calculateSigningAuthority, getAuthorityRuleText, getAuthorityBadgeStyle } from '../utils/formatters';
 
 interface AddConsumerModalProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!accountNumber.trim()) newErrors.accountNumber = 'กรุณาระบุหมายเลขผู้ใช้ไฟฟ้า';
-    if (!installationNumber.trim()) newErrors.installationNumber = 'กรุณาระบุหมายเลขการติดตั้ง';
+    if (!installationNumber.trim()) newErrors.installationNumber = 'กรุณาระบุเลขที่สัญญา';
     if (!location.trim()) newErrors.location = 'กรุณาระบุสถานที่ใช้ไฟฟ้า';
     if (attachContractNow && !contractNumber.trim()) {
       newErrors.contractNumber = 'กรุณาระบุเลขที่สัญญา';
@@ -182,13 +183,13 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                การติดตั้ง (Installation No.) <span className="text-rose-500">*</span>
+                เลขที่สัญญา (Contract No.) <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 value={installationNumber}
                 onChange={(e) => setInstallationNumber(e.target.value)}
-                placeholder="เช่น 4829103"
+                placeholder="เช่น PPA-PEA-4829103"
                 className={`w-full px-3 py-2 text-sm font-mono bg-slate-50 border rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none ${
                   errors.installationNumber ? 'border-rose-400 bg-rose-50/30' : 'border-slate-200'
                 }`}
@@ -232,7 +233,7 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
             )}
           </div>
 
-          {/* Row 4: ขนาดหม้อแปลง & แรงดัน */}
+          {/* Row 4: ขนาดหม้อแปลง & แรงดัน พร้อมเกณฑ์กำหนดอำนาจลงนาม กฟภ. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -240,19 +241,25 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
               </label>
               <select
                 value={transformerSize}
-                onChange={(e) => setTransformerSize(e.target.value)}
+                onChange={(e) => {
+                  const newSize = e.target.value;
+                  setTransformerSize(newSize);
+                  // คำนวณอำนาจลงนามอัตโนมัติตามเกณฑ์: 22 kV <= 2500 = ผจก, 22 kV > 2500 = อฝ.สบ., 115 kV = ผชก.
+                  const autoAuth = calculateSigningAuthority(voltageLevel, newSize);
+                  setSigningAuthority(autoAuth);
+                }}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none font-mono"
               >
-                <option value="500 kVA">500 kVA</option>
-                <option value="800 kVA">800 kVA</option>
-                <option value="1,000 kVA">1,000 kVA</option>
-                <option value="1,250 kVA">1,250 kVA</option>
-                <option value="1,600 kVA">1,600 kVA</option>
-                <option value="2,000 kVA">2,000 kVA</option>
-                <option value="2,500 kVA">2,500 kVA</option>
-                <option value="3,150 kVA">3,150 kVA</option>
-                <option value="4,000 kVA">4,000 kVA</option>
-                <option value="5,000 kVA">5,000 kVA</option>
+                <option value="500 kVA">500 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="800 kVA">800 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="1,000 kVA">1,000 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="1,250 kVA">1,250 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="1,600 kVA">1,600 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="2,000 kVA">2,000 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="2,500 kVA">2,500 kVA (≤ 2,500 kVA - ผจก.)</option>
+                <option value="3,150 kVA">3,150 kVA (&gt; 2,500 kVA - อฝ.สบ.)</option>
+                <option value="4,000 kVA">4,000 kVA (&gt; 2,500 kVA - อฝ.สบ.)</option>
+                <option value="5,000 kVA">5,000 kVA (&gt; 2,500 kVA - อฝ.สบ.)</option>
               </select>
             </div>
 
@@ -262,7 +269,13 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
               </label>
               <select
                 value={voltageLevel}
-                onChange={(e) => setVoltageLevel(e.target.value as VoltageLevel)}
+                onChange={(e) => {
+                  const newVoltage = e.target.value as VoltageLevel;
+                  setVoltageLevel(newVoltage);
+                  // คำนวณอำนาจลงนามอัตโนมัติตามเกณฑ์
+                  const autoAuth = calculateSigningAuthority(newVoltage, transformerSize);
+                  setSigningAuthority(autoAuth);
+                }}
                 className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-sky-400 focus:bg-white outline-none font-mono"
               >
                 <option value="22-33 kV">22-33 kV (ระบบแรงดัน 22-33 kV)</option>
@@ -271,11 +284,79 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
             </div>
           </div>
 
+          {/* กล่องสรุปเกณฑ์อำนาจลงนาม กฟภ. (22 kV <= 2500 = ผจก, 22 kV > 2500 = อฝ.สบ, 115 kV = ผชก) */}
+          <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3 text-xs space-y-1.5">
+            <div className="flex items-center justify-between font-bold text-purple-950">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-purple-700" />
+                <span>เกณฑ์กำหนดอำนาจลงนามสัญญา กฟภ.</span>
+              </span>
+              <span className="text-[11px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full font-mono font-semibold">
+                คำนวณอัตโนมัติ
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 pt-1 text-[11px]">
+              <div
+                className={`p-1.5 rounded-lg border transition-all ${
+                  voltageLevel === '22-33 kV' && parseInt(transformerSize.replace(/[^0-9]/g, ''), 10) <= 2500
+                    ? 'bg-sky-100/90 border-sky-300 text-sky-950 font-bold ring-2 ring-sky-400'
+                    : 'bg-white/60 border-slate-200 text-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>22 kV ≤ 2,500 kVA</span>
+                  <span className="text-sky-700 font-extrabold">ผจก.</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-normal">ผู้จัดการ กฟภ.</div>
+              </div>
+
+              <div
+                className={`p-1.5 rounded-lg border transition-all ${
+                  voltageLevel === '22-33 kV' && parseInt(transformerSize.replace(/[^0-9]/g, ''), 10) > 2500
+                    ? 'bg-amber-100/90 border-amber-300 text-amber-950 font-bold ring-2 ring-amber-400'
+                    : 'bg-white/60 border-slate-200 text-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>22 kV &gt; 2,500 kVA</span>
+                  <span className="text-amber-700 font-extrabold">อฝ.สบ.</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-normal">ผอ.ฝ่ายสัญญาฯ</div>
+              </div>
+
+              <div
+                className={`p-1.5 rounded-lg border transition-all ${
+                  voltageLevel === '115 kV'
+                    ? 'bg-purple-100/90 border-purple-300 text-purple-950 font-bold ring-2 ring-purple-400'
+                    : 'bg-white/60 border-slate-200 text-slate-600'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>115 kV</span>
+                  <span className="text-purple-700 font-extrabold">ผชก.</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-normal">ผู้ช่วยผู้ว่าการ</div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-purple-900 pt-1 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              <span>ผลการคำนวณตามข้อมูลปัจจุบัน: <strong>{getAuthorityRuleText(voltageLevel, transformerSize)}</strong></span>
+            </div>
+          </div>
+
           {/* Row 5: ผู้มีอำนาจลงนาม (ระบุแค่ว่าอำนาจใคร เช่น ผจก., อฝ.สบ., ผชก.) */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              ผู้มีอำนาจลงนาม <span className="text-rose-500">*</span>
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">
+                ผู้มีอำนาจลงนาม <span className="text-rose-500">*</span>
+              </label>
+              <span className="text-[11px] text-purple-700 font-medium flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-purple-600" />
+                กำหนดตามเกณฑ์หม้อแปลงอัตโนมัติ
+              </span>
+            </div>
             <select
               value={signingAuthority}
               onChange={(e) => setSigningAuthority(e.target.value as SigningAuthority)}
@@ -288,7 +369,7 @@ export const AddConsumerModal: React.FC<AddConsumerModalProps> = ({
               ))}
             </select>
             <span className="text-[11px] text-slate-400 mt-1 block">
-              ระบุระดับอำนาจลงนามสัญญาของ กฟภ. (ผจก. / อฝ.สบ. / ผชก.)
+              ระดับอำนาจลงนามสัญญาของ กฟภ.: {SIGNING_AUTHORITIES.find((a) => a.value === signingAuthority)?.desc}
             </span>
           </div>
 

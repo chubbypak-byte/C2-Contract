@@ -7,6 +7,7 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   FileCheck,
   Building2,
   Zap,
@@ -16,7 +17,8 @@ import {
   Shield,
   Layers,
   Paperclip,
-  Check
+  Check,
+  RotateCcw
 } from 'lucide-react';
 import {
   ElectricityConsumer,
@@ -32,7 +34,7 @@ import {
   ContractType,
   ATTACHMENT_CATEGORIES
 } from '../types/contract';
-import { getStatusLabel } from '../utils/formatters';
+import { getStatusLabel, calculateSigningAuthority, getAuthorityRuleText, getAuthorityBadgeStyle } from '../utils/formatters';
 
 interface ContractUploadModalProps {
   consumer: ElectricityConsumer | null;
@@ -97,9 +99,12 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
     consumer.contractDetails?.contractDate || new Date().toISOString().split('T')[0]
   );
 
+  // คำนวณอำนาจลงนามแนะนำตามเกณฑ์: 22 kV <= 2500 = ผจก, 22 kV > 2500 = อฝ.สบ, 115 kV = ผชก
+  const recommendedAuthority = calculateSigningAuthority(consumer.voltageLevel, consumer.transformerSize);
+
   // 8. อำนาจ (drop down เลือก ผจก. อฝ.สบ. ผชก.)
   const [signingAuthority, setSigningAuthority] = useState<SigningAuthority>(
-    consumer.signingAuthority || consumer.contractDetails?.signingAuthority || 'ผจก.'
+    consumer.signingAuthority || consumer.contractDetails?.signingAuthority || recommendedAuthority
   );
 
   // Other contextual details
@@ -348,6 +353,51 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
         {/* 2. Modal Body Content (รายละเอียดสัญญา ต่อท้ายด้วย เอกสารแนบ) */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-slate-50/50">
+          {/* แถบเตือนกรณีสถานะรอแก้ไขข้อมูล พร้อมแสดงหมายเหตุว่าแต่ละไฟล์ต้องแก้ตรงไหน */}
+          {consumer.contractStatus === 'needs_revision' && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 space-y-2 shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-xs text-rose-800">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>สัญญานี้อยู่ในสถานะ "รอแก้ไขข้อมูล" (นำเข้าข้อมูลไม่ถูกต้อง)</span>
+              </div>
+              {consumer.contractDetails?.reviewNotes && (
+                <div className="text-xs text-rose-700 bg-white/80 p-2.5 rounded-lg border border-rose-200 font-medium">
+                  <strong>บันทึกความเห็นภาพรวม:</strong> {consumer.contractDetails.reviewNotes}
+                </div>
+              )}
+
+              {/* สรุปจุดที่ต้องแก้ไขในแต่ละไฟล์เพื่อให้คนแก้รู้ว่าต้องแก้ตรงไหน */}
+              {fileList.filter((f) => f.needsRevision || f.revisionNote).length > 0 && (
+                <div className="bg-white/95 p-3 rounded-lg border border-rose-200 space-y-2">
+                  <div className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                    <span>รายการไฟล์แนบที่ผู้ตรวจระบุจุดที่ต้องแก้ไข ({fileList.filter((f) => f.needsRevision || f.revisionNote).length} ไฟล์):</span>
+                  </div>
+                  <div className="space-y-1.5 pl-1">
+                    {fileList
+                      .filter((f) => f.needsRevision || f.revisionNote)
+                      .map((rf) => (
+                        <div key={rf.id} className="text-xs bg-rose-50/70 p-2 rounded-lg border border-rose-200">
+                          <div className="font-bold text-rose-950 flex items-center gap-1.5 flex-wrap">
+                            <span>📄 {rf.fileName}</span>
+                            <span className="text-[10px] bg-rose-200 text-rose-900 px-1.5 py-0.2 rounded font-medium">({rf.fileCategory})</span>
+                          </div>
+                          <div className="text-xs text-rose-700 mt-1 pl-2 border-l-2 border-rose-400">
+                            <strong className="text-rose-900">หมายเหตุจุดที่ต้องแก้ไข: </strong>
+                            <span>{rf.revisionNote || 'ข้อมูลไม่ถูกต้อง กรุณาแก้ไข'}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-[11px] text-rose-600 pt-0.5">
+                เมื่อท่านแก้ไขข้อมูลรายละเอียดสัญญาและเอกสารแนบเรียบร้อยแล้ว ให้กดปุ่ม <strong>"ยืนยันการแก้ไข (ส่งไปรอตรวจสอบ)"</strong> ด้านล่าง ระบบจะเปลี่ยนสถานะเป็น "รอตรวจสอบไฟล์สัญญา" ทันที
+              </p>
+            </div>
+          )}
+
           {/* ส่วนที่ 1: รายละเอียดสัญญา */}
           <div className="space-y-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
             <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
@@ -476,11 +526,30 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 </div>
               </div>
 
-              {/* 8. อำนาจ (drop down เลือก ผจก. อฝ.สบ. ผชก.) */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  อำนาจ (ผู้มีอำนาจลงนาม กฟภ.) <span className="text-rose-500">*</span>
-                </label>
+              {/* 8. อำนาจ (drop down เลือก ผจก. อฝ.สบ. ผชก.) พร้อมเกณฑ์หม้อแปลง */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    อำนาจ (ผู้มีอำนาจลงนาม กฟภ.) <span className="text-rose-500">*</span>
+                  </label>
+                  {signingAuthority === recommendedAuthority ? (
+                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      ตรงตามเกณฑ์หม้อแปลง ({recommendedAuthority})
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSigningAuthority(recommendedAuthority)}
+                      className="text-[11px] text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200 transition-colors font-medium flex items-center gap-1 cursor-pointer"
+                      title="กดเพื่อใช้อำนาจตามเกณฑ์ขนาดหม้อแปลงและแรงดัน"
+                    >
+                      <Zap className="w-3 h-3 text-purple-600" />
+                      ใช้อำนาจตามเกณฑ์ ({recommendedAuthority})
+                    </button>
+                  )}
+                </div>
+
                 <select
                   value={signingAuthority}
                   onChange={(e) => setSigningAuthority(e.target.value as SigningAuthority)}
@@ -488,13 +557,21 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 >
                   {SIGNING_AUTHORITIES.map((auth) => (
                     <option key={auth.value} value={auth.value}>
-                      {auth.label}
+                      {auth.label} - {auth.desc}
                     </option>
                   ))}
                 </select>
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  {SIGNING_AUTHORITIES.find((a) => a.value === signingAuthority)?.desc}
-                </span>
+
+                {/* กล่องอธิบายเกณฑ์หม้อแปลง */}
+                <div className="p-2.5 rounded-lg bg-slate-100/80 border border-slate-200 text-[11px] text-slate-600 space-y-1">
+                  <div className="font-semibold text-slate-800 flex items-center gap-1">
+                    <Shield className="w-3.5 h-3.5 text-purple-600" />
+                    <span>เกณฑ์กำหนดอำนาจ: 22 kV ≤ 2,500 kVA (ผจก.) | 22 kV &gt; 2,500 kVA (อฝ.สบ.) | 115 kV (ผชก.)</span>
+                  </div>
+                  <div className="text-slate-500">
+                    ข้อมูลผู้ใช้ไฟ: แรงดัน <strong>{consumer.voltageLevel}</strong> | ขนาดหม้อแปลง <strong>{consumer.transformerSize}</strong> → เกณฑ์แนะนำ: <strong className="text-purple-800">{recommendedAuthority}</strong>
+                  </div>
+                </div>
               </div>
 
               {/* ประเภทสัญญา (มี 7 ประเภทตามข้อกำหนด) */}
@@ -615,12 +692,24 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                         <td className="py-2.5 px-4 font-medium text-slate-800">
                           <div className="flex items-start gap-2">
                             <FileText className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold">{file.fileCategory}</span>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-slate-900">{file.fileCategory}</span>
                                 {file.fileCategory === 'สัญญาแนบท้าย' && (
                                   <span className="text-[10px] bg-purple-100 text-[#702d8a] px-1.5 py-0.5 rounded font-bold">
                                     แนบท้าย
+                                  </span>
+                                )}
+                                {(file.needsRevision || file.revisionNote) && (
+                                  <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                    ต้องแก้ไข
+                                  </span>
+                                )}
+                                {file.isVerified && (
+                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    ตรวจแล้ว
                                   </span>
                                 )}
                               </div>
@@ -628,6 +717,19 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                                 <span className="text-[11px] text-purple-900 block font-medium mt-0.5">
                                   {file.fileDetails}
                                 </span>
+                              )}
+
+                              {/* แสดงหมายเหตุสิ่งที่ต้องแก้ไขให้ชัดเจน เพื่อให้คนแก้รู้ว่าต้องแก้ตรงไหน */}
+                              {(file.needsRevision || file.revisionNote) && (
+                                <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1 shadow-2xs">
+                                  <div className="font-bold text-rose-900 flex items-center gap-1.5">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                    <span>หมายเหตุจุดที่ต้องแก้ไข:</span>
+                                  </div>
+                                  <p className="text-xs text-rose-800 pl-5 font-normal leading-relaxed">
+                                    {file.revisionNote || 'ข้อมูลหรือเอกสารไม่ถูกต้อง กรุณาแก้ไขและแนบไฟล์ใหม่'}
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -717,10 +819,23 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="bg-[#22c55e] hover:bg-green-600 text-white font-semibold text-xs px-5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow"
+              className={`font-semibold text-xs px-5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow text-white ${
+                consumer.contractStatus === 'needs_revision'
+                  ? 'bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700'
+                  : 'bg-[#22c55e] hover:bg-green-600'
+              }`}
             >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>บันทึกข้อมูล</span>
+              {consumer.contractStatus === 'needs_revision' ? (
+                <>
+                  <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                  <span>ยืนยันการแก้ไข (ส่งไปรอตรวจสอบใหม่)</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>บันทึกข้อมูล</span>
+                </>
+              )}
             </button>
           </div>
         </div>

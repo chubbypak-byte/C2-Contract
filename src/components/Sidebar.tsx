@@ -163,7 +163,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3.5 border-t border-sky-100 bg-slate-50/50 text-[11px] text-slate-500">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-slate-700">การไฟฟ้าส่วนภูมิภาค</span>
-            <span className="text-[10px] text-sky-600 font-mono">PLMS PPA v2.4</span>
           </div>
           <p className="text-[10px] text-slate-400 mt-0.5">ระบบจัดเก็บและติดตามสัญญาซื้อขายไฟฟ้า</p>
         </div>

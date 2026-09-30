@@ -44,6 +44,7 @@ export default function App() {
   // Role & Permissions State (RBAC)
   const [currentRole, setCurrentRole] = useState<UserRole>('legal_officer');
   const [rolesConfig, setRolesConfig] = useState<Record<UserRole, RoleDefinition>>(DEFAULT_ROLES);
+  const [userPosition, setUserPosition] = useState<'หผ.' | 'พบช.4'>('หผ.');
 
   const activeRoleDefinition = rolesConfig[currentRole];
   const activePermissions = activeRoleDefinition.permissions;
@@ -103,6 +104,7 @@ export default function App() {
       // 5. Search query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
+        const matchConsumerName = item.consumerName?.toLowerCase().includes(q) || false;
         const matchAccount = item.accountNumber.toLowerCase().includes(q);
         const matchInstall = item.installationNumber.toLowerCase().includes(q);
         const matchCode = item.utilityCode.toLowerCase().includes(q);
@@ -112,6 +114,7 @@ export default function App() {
         const matchContractNo = item.contractDetails?.contractNumber?.toLowerCase().includes(q) || false;
 
         if (
+          !matchConsumerName &&
           !matchAccount &&
           !matchInstall &&
           !matchCode &&
@@ -271,11 +274,12 @@ export default function App() {
     });
   };
 
-  // Handler: Reject verification (นำเข้าข้อมูลไม่ถูกต้อง -> เด้งผู้ใช้ไฟไป tab รอแก้ไขข้อมูล)
+  // Handler: Reject verification (นำเข้าข้อมูลไม่ถูกต้อง -> เด้งผู้ใช้ไฟไป tab รอแก้ไขข้อมูล พร้อมเก็บหมายเหตุแต่ละไฟล์)
   const handleRejectVerification = (
     consumerId: string,
     reviewNotes: string,
-    reviewerName: string
+    reviewerName: string,
+    rejectedFiles?: AttachedFile[]
   ) => {
     if (!activePermissions.canVerifyContract) {
       handlePermissionDenied('ตรวจสอบและรับรองข้อมูล');
@@ -285,6 +289,7 @@ export default function App() {
     setConsumers((prev) =>
       prev.map((c) => {
         if (c.id === consumerId) {
+          const finalFiles = rejectedFiles || c.contractDetails?.files;
           const updatedDetails: ContractDetails = {
             contractNumber:
               c.contractDetails?.contractNumber || `PPA-PEA-${c.utilityCode}/0101`,
@@ -299,6 +304,7 @@ export default function App() {
             signingAuthority:
               c.contractDetails?.signingAuthority || c.signingAuthority || 'ผจก.',
             ...c.contractDetails,
+            files: finalFiles,
             reviewedBy: reviewerName,
             reviewedAt: new Date().toLocaleString('th-TH'),
             reviewNotes,
@@ -308,6 +314,8 @@ export default function App() {
             ...c,
             contractDetails: updatedDetails,
             contractStatus: 'needs_revision' as ContractStatus,
+            attachedFilesCount: finalFiles ? finalFiles.length : c.attachedFilesCount,
+            verifiedFilesCount: finalFiles ? finalFiles.filter((f) => f.isVerified).length : c.verifiedFilesCount,
             updatedAt: new Date().toLocaleString('th-TH'),
           };
         }
@@ -342,6 +350,47 @@ export default function App() {
       title: 'ส่งกลับรอแก้ไขข้อมูล',
       message: `ย้ายข้อมูลผู้ใช้ไฟ CA: ${target?.accountNumber} ไปที่แท็บ "รอแก้ไขข้อมูล" เรียบร้อยแล้ว`,
       type: 'warning',
+    });
+  };
+
+  // Handler: Confirm revision for consumers in 'needs_revision' (เด้งกลับไปสถานะรอตรวจสอบใหม่)
+  const handleConfirmRevision = (consumer: ElectricityConsumer) => {
+    setConsumers((prev) =>
+      prev.map((c) =>
+        c.id === consumer.id
+          ? {
+              ...c,
+              contractStatus: 'pending_review' as ContractStatus,
+              updatedAt: new Date().toLocaleString('th-TH'),
+            }
+          : c
+      )
+    );
+
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: '🔄 ยืนยันการแก้ไขข้อมูลแล้ว (ส่งกลับไปรอตรวจสอบใหม่)',
+      message: `ข้อมูลสัญญาของ ${
+        consumer.consumerName || consumer.location.split(' ')[0]
+      } (CA: ${consumer.accountNumber}) ได้รับการยืนยันการแก้ไขแล้ว และส่งกลับไปยังแท็บ "รอตรวจสอบไฟล์สัญญา" เรียบร้อยแล้ว`,
+      type: 'info',
+      timestamp: 'เมื่อสักครู่',
+      consumerId: consumer.id,
+      accountNumber: consumer.accountNumber,
+      isRead: false,
+      statusChange: 'pending_review',
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+
+    // เด้งกลับไปสถานะรอตรวจสอบใหม่ทันที
+    setActiveTab('รอตรวจสอบไฟล์สัญญา');
+    setCurrentNavTab('registry');
+
+    setToast({
+      id: `toast-${Date.now()}`,
+      title: 'ยืนยันการแก้ไขสำเร็จ',
+      message: `ข้อมูลผู้ใช้ไฟ CA: ${consumer.accountNumber} เด้งกลับไปที่แท็บ "รอตรวจสอบไฟล์สัญญา" เรียบร้อยแล้ว`,
+      type: 'success',
     });
   };
 
@@ -598,6 +647,8 @@ export default function App() {
         onGoHome={handleGoHome}
         currentRole={activeRoleDefinition}
         rolesConfig={rolesConfig}
+        userPosition={userPosition}
+        onChangeUserPosition={setUserPosition}
         onChangeRole={(newRole) => {
           setCurrentRole(newRole);
           setToast({
@@ -741,6 +792,7 @@ export default function App() {
                   }
                   setSelectedForVerification(consumer);
                 }}
+                onConfirmRevision={handleConfirmRevision}
                 onDeleteConsumer={handleDeleteConsumer}
                 canViewDetails={activePermissions.canViewDetails}
                 canUploadFiles={activePermissions.canUploadFiles}
@@ -806,11 +858,6 @@ export default function App() {
             <span>·</span>
             <span>การไฟฟ้าส่วนภูมิภาค (กฟภ.)</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span>พร้อมใช้งานบน Vercel & PostgreSQL</span>
-            <span>·</span>
-            <span>ระบบกำหนดสิทธิ์ RBAC 4 ระดับ</span>
-          </div>
         </div>
       </footer>
 
@@ -848,6 +895,7 @@ export default function App() {
           setSelectedForView(null);
           setSelectedForVerification(consumer);
         }}
+        onConfirmRevision={handleConfirmRevision}
       />
 
       {/* หน้าตรวจสอบสัญญาซื้อขายไฟฟ้า (แบบแยก 2 ฝั่ง ซ้าย: รายละเอียดสัญญา / ขวา: หน้าสัญญาซื้อขายไฟฟ้า) */}
@@ -855,6 +903,7 @@ export default function App() {
         consumer={selectedForVerification}
         isOpen={Boolean(selectedForVerification)}
         onClose={() => setSelectedForVerification(null)}
+        reviewerPosition={userPosition}
         onConfirmVerification={handleConfirmVerification}
         onRejectVerification={handleRejectVerification}
         onOpenUploadModal={(consumer) => {

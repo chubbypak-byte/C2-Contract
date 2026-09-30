@@ -53,7 +53,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
   },
   legal_officer: {
     id: 'legal_officer',
-    title: 'นายสมเกียรติ สว่างไสว (รหัสพนักงาน: 504128, พบช.4 หผ.)',
+    title: 'นายสมเกียรติ สว่างไสว (รหัสพนักงาน: 504128, หผ.)',
     department: 'กลุ่มงานตรวจสอบข้อมูลสัญญา กฟภ.',
     badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
     description: 'มีสิทธิ์ดู Dashboard, ทะเบียน, ดูรายละเอียด, ตรวจสอบ/รับรองข้อมูล, อัพโหลดเอกสาร และแก้ไขข้อมูลสัญญา (ไม่มีสิทธิ์ลบข้อมูลและกำหนดสิทธิ์)',
@@ -121,7 +121,7 @@ export const INITIAL_SYSTEM_USERS: SystemUser[] = [
     id: 'usr-2',
     name: 'นายสมเกียรติ สว่างไสว',
     employeeId: '504128',
-    position: 'พบช.4 หผ.',
+    position: 'หผ.',
     email: 'somkiat.saw@pea.co.th',
     role: 'legal_officer',
     department: 'กลุ่มงานตรวจสอบข้อมูลสัญญา กฟจ.ชลบุรี',

@@ -49,7 +49,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <Search className="w-4 h-4" />
-              <span>ค้นหาหมายเลขผู้ใช้ไฟฟ้า (CA)</span>
+              <span>ค้นหาชื่อผู้ใช้ไฟฟ้า / หมายเลข CA</span>
             </button>
 
             {pendingCount > 0 && (

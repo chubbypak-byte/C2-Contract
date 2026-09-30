@@ -25,6 +25,8 @@ interface HeaderProps {
   onGoHome?: () => void;
   currentRole: RoleDefinition;
   rolesConfig: Record<UserRole, RoleDefinition>;
+  userPosition?: 'หผ.' | 'พบช.4';
+  onChangeUserPosition?: (position: 'หผ.' | 'พบช.4') => void;
   onChangeRole: (role: UserRole) => void;
   onToggleSidebar?: () => void;
 }
@@ -37,17 +39,22 @@ export const Header: React.FC<HeaderProps> = ({
   onGoHome,
   currentRole,
   rolesConfig,
+  userPosition = 'หผ.',
+  onChangeUserPosition,
   onChangeRole,
   onToggleSidebar,
 }) => {
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const [internalPosition, setInternalPosition] = useState<'หผ.' | 'พบช.4'>(userPosition);
+  const activePosition = onChangeUserPosition ? userPosition : internalPosition;
+  const setPosition = onChangeUserPosition || setInternalPosition;
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   // ข้อมูล user ตามบทบาทปัจจุบัน (ข้อ 10)
   const matchedUser = INITIAL_SYSTEM_USERS.find((u) => u.role === currentRole.id) || {
     name: currentRole.title,
     employeeId: '504128',
-    position: 'พบช.4 หผ.',
+    position: 'หผ.',
     department: currentRole.department,
   };
 
@@ -61,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
       : matchedUser.employeeId || '501234';
   const displayPosition =
     currentRole.id === 'legal_officer'
-      ? 'พบช.4 หผ.'
+      ? activePosition
       : matchedUser.position || 'เจ้าหน้าที่';
 
   return (
@@ -189,8 +196,35 @@ export const Header: React.FC<HeaderProps> = ({
                             <div className="text-xs text-purple-800 font-semibold mt-0.5">
                               รหัสพนักงาน: <span className="font-mono">{displayEmployeeId}</span>
                             </div>
-                            <div className="text-[11px] text-slate-500 font-medium">
-                              ตำแหน่ง: {displayPosition}
+                            {/* เลือกว่าเป็น พบช.4 หรือ หผ. โดยเริ่มต้นระบุเป็น หผ. */}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <span className="text-[11px] text-slate-600 font-semibold">ตำแหน่ง:</span>
+                              <div className="inline-flex rounded-lg border border-purple-200 p-0.5 bg-white shadow-2xs">
+                                <button
+                                  type="button"
+                                  onClick={() => setPosition('หผ.')}
+                                  className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                                    activePosition === 'หผ.'
+                                      ? 'bg-[#702d8a] text-white shadow-2xs'
+                                      : 'text-purple-800 hover:bg-purple-50'
+                                  }`}
+                                  title="เลือกตำแหน่ง: หผ."
+                                >
+                                  หผ.
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPosition('พบช.4')}
+                                  className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                                    activePosition === 'พบช.4'
+                                      ? 'bg-[#702d8a] text-white shadow-2xs'
+                                      : 'text-purple-800 hover:bg-purple-50'
+                                  }`}
+                                  title="เลือกตำแหน่ง: พบช.4"
+                                >
+                                  พบช.4
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
