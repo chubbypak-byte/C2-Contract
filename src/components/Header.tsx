@@ -293,9 +293,9 @@ export const Header: React.FC<HeaderProps> = ({
                             )}
                           </span>
                         </div>
-                        {/* ข้อ 9: ตรวจสอบ/รับรองข้อมูล */}
+                        {/* ข้อ 9: ตรวจสอบการนำเข้าข้อมูล */}
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-600">ตรวจสอบ/รับรองข้อมูล:</span>
+                          <span className="text-slate-600">ตรวจสอบการนำเข้าข้อมูล:</span>
                           <span className={currentRole.permissions.canVerifyContract ? 'text-emerald-700 font-semibold flex items-center gap-1' : 'text-slate-400'}>
                             {currentRole.permissions.canVerifyContract ? (
                               <>

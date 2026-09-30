@@ -7,7 +7,7 @@ export interface RolePermissions {
   canUploadFiles: boolean; // อัพโหลดไฟล์สัญญา
   canEditData: boolean; // แก้ไขข้อมูล
   canDeleteData: boolean; // ลบข้อมูล
-  canVerifyContract: boolean; // ตรวจสอบ/รับรองข้อมูล
+  canVerifyContract: boolean; // ตรวจสอบการนำเข้าข้อมูล
   canManagePermissions: boolean; // กำหนดสิทธิ์
 }
 
@@ -39,7 +39,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
     title: 'ผู้ดูแลระบบสูงสุด (Super Admin)',
     department: 'ฝ่ายบริหารสัญญาและเทคโนโลยีสารสนเทศ กฟภ.',
     badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
-    description: 'มีสิทธิ์สมบูรณ์ในการจัดการระบบ ดู Dashboard, ทะเบียน, ดูรายละเอียด, อัพโหลด, แก้ไข, ลบข้อมูล, ตรวจสอบ/รับรองข้อมูล และกำหนดสิทธิ์ผู้ใช้งาน',
+    description: 'มีสิทธิ์สมบูรณ์ในการจัดการระบบ ดู Dashboard, ทะเบียน, ดูรายละเอียด, อัพโหลด, แก้ไข, ลบข้อมูล, ตรวจสอบการนำเข้าข้อมูล และกำหนดสิทธิ์ผู้ใช้งาน',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,
@@ -56,7 +56,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
     title: 'นายสมเกียรติ สว่างไสว (รหัสพนักงาน: 504128, หผ.)',
     department: 'กลุ่มงานตรวจสอบข้อมูลสัญญา กฟภ.',
     badgeColor: 'bg-sky-100 text-sky-800 border-sky-200',
-    description: 'มีสิทธิ์ดู Dashboard, ทะเบียน, ดูรายละเอียด, ตรวจสอบ/รับรองข้อมูล, อัพโหลดเอกสาร และแก้ไขข้อมูลสัญญา (ไม่มีสิทธิ์ลบข้อมูลและกำหนดสิทธิ์)',
+    description: 'มีสิทธิ์ดู Dashboard, ทะเบียน, ดูรายละเอียด, ตรวจสอบการนำเข้าข้อมูล, อัพโหลดเอกสาร และแก้ไขข้อมูลสัญญา (ไม่มีสิทธิ์ลบข้อมูลและกำหนดสิทธิ์)',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,
@@ -73,7 +73,7 @@ export const DEFAULT_ROLES: Record<UserRole, RoleDefinition> = {
     title: 'เจ้าหน้าที่บันทึกข้อมูล (Data Entry Officer)',
     department: 'แผนกบริการลูกค้าและสัญญา กฟภ. สาขา',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    description: 'มีสิทธิ์ดู Dashboard, ทะเบียนสัญญา, กดดูรายละเอียด และอัพโหลดไฟล์สัญญาหลัก/แนบท้าย (ไม่มีสิทธิ์แก้ไข ลบ หรือตรวจสอบ/รับรองข้อมูล)',
+    description: 'มีสิทธิ์ดู Dashboard, ทะเบียนสัญญา, กดดูรายละเอียด และอัพโหลดไฟล์สัญญาหลัก/แนบท้าย (ไม่มีสิทธิ์แก้ไข ลบ หรือตรวจสอบการนำเข้าข้อมูล)',
     permissions: {
       canViewDashboard: true,
       canViewRegistry: true,

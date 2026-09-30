@@ -282,7 +282,7 @@ export default function App() {
     rejectedFiles?: AttachedFile[]
   ) => {
     if (!activePermissions.canVerifyContract) {
-      handlePermissionDenied('ตรวจสอบและรับรองข้อมูล');
+      handlePermissionDenied('ตรวจสอบการนำเข้าข้อมูล');
       return;
     }
 

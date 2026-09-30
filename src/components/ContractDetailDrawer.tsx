@@ -405,12 +405,12 @@ export const ContractDetailDrawer: React.FC<ContractDetailDrawerProps> = ({
                   }`}
                   title={
                     isVerified
-                      ? 'ตรวจสอบ/รับรองข้อมูล (ตรวจแล้ว - สีเขียว)'
-                      : 'ตรวจสอบ/รับรองข้อมูล (ยังไม่ตรวจ - สีเทา)'
+                      ? 'ตรวจสอบการนำเข้าข้อมูล (ตรวจแล้ว - สีเขียว)'
+                      : 'ตรวจสอบการนำเข้าข้อมูล (ยังไม่ตรวจ - สีเทา)'
                   }
                 >
                   <FileCheck2 className={`w-4 h-4 ${isVerified ? 'text-white' : 'text-slate-400'}`} />
-                  <span>ตรวจสอบ/รับรองข้อมูล</span>
+                  <span>ตรวจสอบการนำเข้าข้อมูล</span>
                 </button>
               );
             })()}

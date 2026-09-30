@@ -226,7 +226,7 @@ export const PermissionsManagement: React.FC<PermissionsManagementProps> = ({
                 <th scope="col" className="py-3.5 px-3 text-xs font-semibold text-center whitespace-nowrap">
                   <div className="flex items-center justify-center gap-1">
                     <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>ตรวจสอบ/รับรองข้อมูล</span>
+                    <span>ตรวจสอบการนำเข้าข้อมูล</span>
                   </div>
                 </th>
               </tr>
@@ -362,7 +362,7 @@ export const PermissionsManagement: React.FC<PermissionsManagementProps> = ({
                       </button>
                     </td>
 
-                    {/* 7. ตรวจสอบ/รับรองข้อมูล */}
+                    {/* 7. ตรวจสอบการนำเข้าข้อมูล */}
                     <td className="py-4 px-3 text-center align-middle">
                       <button
                         onClick={() => handleTogglePermission(rKey, 'canVerifyContract')}
@@ -371,7 +371,7 @@ export const PermissionsManagement: React.FC<PermissionsManagementProps> = ({
                             ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                             : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                         }`}
-                        title="ตรวจสอบ/รับรองข้อมูล"
+                        title="ตรวจสอบการนำเข้าข้อมูล"
                       >
                         {p.canVerifyContract ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       </button>

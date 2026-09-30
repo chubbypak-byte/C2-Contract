@@ -378,7 +378,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                           </button>
                         )}
 
-                        {/* 2. ตรวจสอบ/รับรองข้อมูล (ขนาดคงที่ w-[152px] h-8 เรียงตรงกันทุกแถว) */}
+                        {/* 2. ตรวจสอบการนำเข้าข้อมูล (ขนาดคงที่ w-[152px] h-8 เรียงตรงกันทุกแถว) */}
                         {onVerifyContract && (
                           canVerifyContract ? (
                             <button
@@ -390,8 +390,8 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                               }`}
                               title={
                                 isVerified
-                                  ? 'ตรวจสอบ/รับรองข้อมูล (ตรวจแล้ว - สีเขียว)'
-                                  : 'ตรวจสอบ/รับรองข้อมูล (ยังไม่ตรวจ - สีเทา)'
+                                  ? 'ตรวจสอบการนำเข้าข้อมูล (ตรวจแล้ว - สีเขียว)'
+                                  : 'ตรวจสอบการนำเข้าข้อมูล (ยังไม่ตรวจ - สีเทา)'
                               }
                             >
                               <FileCheck2
@@ -399,16 +399,16 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                                   isVerified ? 'text-white stroke-[2.5]' : 'text-slate-400'
                                 }`}
                               />
-                              <span>ตรวจสอบ/รับรองข้อมูล</span>
+                              <span>ตรวจสอบการนำเข้าข้อมูล</span>
                             </button>
                           ) : (
                             <button
-                              onClick={() => onPermissionDenied?.('ตรวจสอบ/รับรองข้อมูล')}
+                              onClick={() => onPermissionDenied?.('ตรวจสอบการนำเข้าข้อมูล')}
                               className="inline-flex items-center justify-center gap-1.5 w-[152px] h-8 text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed whitespace-nowrap shrink-0"
-                              title="ไม่มีสิทธิ์ตรวจสอบ/รับรองข้อมูล"
+                              title="ไม่มีสิทธิ์ตรวจสอบการนำเข้าข้อมูล"
                             >
                               <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                              <span>ตรวจสอบ/รับรองข้อมูล</span>
+                              <span>ตรวจสอบการนำเข้าข้อมูล</span>
                             </button>
                           )
                         )}

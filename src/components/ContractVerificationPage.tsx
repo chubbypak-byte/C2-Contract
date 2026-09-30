@@ -245,7 +245,7 @@ CA: ${consumer.accountNumber}
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold tracking-tight">
-                หน้าตรวจสอบ/รับรองข้อมูลสัญญาซื้อขายไฟฟ้า (กฟภ.)
+                หน้าตรวจสอบการนำเข้าข้อมูลสัญญาซื้อขายไฟฟ้า (กฟภ.)
               </h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/15 text-purple-100">
                 PLMS Verification
@@ -405,13 +405,13 @@ CA: ${consumer.accountNumber}
               </div>
             </div>
 
-            {/* Box 3: รายการเอกสารที่แนบในสัญญา (ตรวจสอบ/รับรองข้อมูลทีละไฟล์แนบเทียบกับข้อมูล) */}
+            {/* Box 3: รายการเอกสารที่แนบในสัญญา (ตรวจสอบการนำเข้าข้อมูลทีละไฟล์แนบเทียบกับข้อมูล) */}
             <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2.5">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
                 <div>
                   <h4 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                     <Paperclip className="w-3.5 h-3.5 text-purple-700" />
-                    <span>ตรวจสอบ/รับรองข้อมูลทีละไฟล์แนบ ({fileList.filter((f) => f.isVerified).length}/{fileList.length})</span>
+                    <span>ตรวจสอบการนำเข้าข้อมูลทีละไฟล์แนบ ({fileList.filter((f) => f.isVerified).length}/{fileList.length})</span>
                   </h4>
                   <p className="text-[10px] text-slate-500 mt-0.5">
                     เทียบข้อมูลเอกสารแต่ละไฟล์กับข้อมูลสัญญาในระบบ
@@ -532,7 +532,7 @@ CA: ${consumer.accountNumber}
             <div className="bg-purple-50/60 rounded-xl p-4 border border-purple-200/80 space-y-3">
               <h4 className="font-bold text-purple-950 flex items-center gap-1.5 text-xs">
                 <UserCheck className="w-3.5 h-3.5 text-[#702d8a]" />
-                <span>ผลการตรวจสอบและความเห็นเจ้าหน้าที่ กฟภ.</span>
+                <span>ผลการตรวจสอบ/ข้อทักท้วง</span>
               </h4>
 
               <div>
