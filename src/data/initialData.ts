@@ -414,6 +414,13 @@ export const INITIAL_CONSUMERS: ElectricityConsumer[] = [
     contractStatus: 'pending_upload',
     attachedFilesCount: 0,
     verifiedFilesCount: 0,
+    contractDetails: {
+      contractNumber: 'PPA-PEA-H02202/0944',
+      contractType: 'รอตรวจสอบและระบุประเภทสัญญา (ข้อมูลจากระบบ SAP)',
+      contractDate: '2026-03-20',
+      expireDate: '2031-03-19',
+      signingAuthority: 'ผจก.',
+    },
     updatedAt: '2026-03-20 08:30',
     createdAt: '2026-03-20 08:30',
   },

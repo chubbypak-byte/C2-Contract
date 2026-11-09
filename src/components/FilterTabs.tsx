@@ -31,12 +31,12 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
     { label: 'ทั้งหมด', count: counts['ทั้งหมด'] },
     { label: 'แนบไฟล์แล้ว', count: counts['แนบไฟล์แล้ว'] },
     { label: 'รอตรวจสอบไฟล์สัญญา', count: counts['รอตรวจสอบไฟล์สัญญา'] },
-    { label: 'รอแก้ไขข้อมูล', count: counts['รอแก้ไขข้อมูล'], badgeColor: counts['รอแก้ไขข้อมูล'] > 0 ? 'bg-rose-100 text-rose-700' : undefined },
+    { label: 'รอแก้ไขข้อมูล', count: counts['รอแก้ไขข้อมูล'], badgeColor: counts['รอแก้ไขข้อมูล'] > 0 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300' : undefined },
     { label: 'เสร็จสิ้น', count: counts['เสร็จสิ้น'] },
   ];
 
   return (
-    <div className="flex items-center gap-1.5 p-1.5 bg-sky-50/80 border border-sky-100 rounded-xl overflow-x-auto">
+    <div className="flex items-center gap-1.5 p-1.5 bg-sky-50/80 dark:bg-slate-900 border border-sky-100 dark:border-slate-800 rounded-xl overflow-x-auto">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.label;
         return (
@@ -45,18 +45,18 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
             onClick={() => onChangeTab(tab.label)}
             className={`flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-150 whitespace-nowrap shrink-0 cursor-pointer ${
               isActive
-                ? 'bg-white text-sky-800 shadow-xs border border-sky-200/80 font-semibold'
-                : 'text-slate-600 hover:text-sky-900 hover:bg-sky-100/50'
+                ? 'bg-white dark:bg-slate-800 text-sky-800 dark:text-sky-300 shadow-xs border border-sky-200/80 dark:border-slate-700 font-semibold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-sky-900 dark:hover:text-sky-200 hover:bg-sky-100/50 dark:hover:bg-slate-800/50'
             }`}
           >
             <span>{tab.label}</span>
             <span
               className={`px-2 py-0.5 text-xs rounded-full font-mono tabular-nums transition-colors ${
                 isActive
-                  ? 'bg-sky-100 text-sky-800 font-bold'
+                  ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 font-bold border border-sky-200 dark:border-sky-800'
                   : tab.badgeColor
-                  ? `${tab.badgeColor} font-semibold`
-                  : 'bg-white/80 text-slate-500 border border-slate-200/50'
+                  ? `${tab.badgeColor} font-semibold border border-rose-200 dark:border-rose-800`
+                  : 'bg-white/80 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-700'
               }`}
             >
               {tab.count}

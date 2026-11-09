@@ -59,17 +59,14 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 }) => {
   if (!isOpen || !consumer) return null;
 
-  // Tabs: 'รายละเอียดสัญญา' | 'เอกสารแนบ'
-  const [activeTab, setActiveTab] = useState<'details' | 'attachments'>('details');
-
-  // Form Fields as explicitly requested:
-  // 1. กฟฟ. (drop down เลือก การไฟฟ้า)
+  // Form Fields:
+  // 1. กฟฟ.
   const [utility, setUtility] = useState<PEABranch>(
     (consumer.utility as PEABranch) || 'กฟจ.ชลบุรี'
   );
   const [utilityCode, setUtilityCode] = useState<string>(consumer.utilityCode || 'H01101');
 
-  // 2. แรงดัน (drop down เลือก 22-33 kV กับ 115 kV)
+  // 2. แรงดัน
   const [voltageLevel, setVoltageLevel] = useState<VoltageLevel>(
     (consumer.voltageLevel as VoltageLevel) || '22-33 kV'
   );
@@ -99,10 +96,10 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
     consumer.contractDetails?.contractDate || new Date().toISOString().split('T')[0]
   );
 
-  // คำนวณอำนาจลงนามแนะนำตามเกณฑ์: 22 kV <= 2500 = ผจก, 22 kV > 2500 = อฝ.สบ, 115 kV = ผชก
+  // คำนวณอำนาจลงนามแนะนำตามเกณฑ์
   const recommendedAuthority = calculateSigningAuthority(consumer.voltageLevel, consumer.transformerSize);
 
-  // 8. อำนาจ (drop down เลือก ผจก. อฝ.สบ. ผชก.)
+  // 8. อำนาจ
   const [signingAuthority, setSigningAuthority] = useState<SigningAuthority>(
     consumer.signingAuthority || consumer.contractDetails?.signingAuthority || recommendedAuthority
   );
@@ -146,7 +143,7 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
     return [];
   });
 
-  // Modal for Adding a new document (Matching the user's second screenshot)
+  // Modal for Adding a new document
   const [isAddingDoc, setIsAddingDoc] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState<string>('สัญญาหลัก');
   const [newDocDescription, setNewDocDescription] = useState('');
@@ -156,10 +153,9 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
   const [docError, setDocError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // คำนวณสถานะสัญญาอัตโนมัติ (ไม่ให้เลือกตามคำสั่งผู้ใช้)
+  // คำนวณสถานะสัญญาอัตโนมัติ
   const computeStatus = (): ContractStatus => {
     if (fileList.length === 0) return 'pending_upload';
-    // หากแก้ไขข้อมูลจากสถานะ "รอแก้ไขข้อมูล" (needs_revision) ให้เด้งกลับไปที่ "รอตรวจสอบไฟล์สัญญา"
     if (consumer.contractStatus === 'needs_revision') {
       return 'pending_review';
     }
@@ -217,7 +213,6 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
   // Add new file to table
   const handleAddFile = (e: React.FormEvent) => {
     e.preventDefault();
-    // ข้อ 5: ถ้าเลือกสัญญาแนบท้าย ให้บังคับระบุรายละเอียด ว่าสัญญาแนบท้ายอะไร
     if (newDocTitle === 'สัญญาแนบท้าย' && !newDocDescription.trim()) {
       setDocError('กรณีเลือก "สัญญาแนบท้าย" ต้องระบุรายละเอียดว่าสัญญาแนบท้ายอะไร');
       return;
@@ -284,8 +279,6 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
   const handleSave = () => {
     const attachedCount = fileList.length;
     const verifiedCount = fileList.filter((f) => f.isVerified).length;
-
-    // Auto calculate status automatically based on attached and verified files
     const finalStatus = computeStatus();
 
     const updatedDetails: ContractDetails = {
@@ -332,9 +325,9 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-      <div className="bg-white rounded-xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
-        {/* 1. Modal Top Purple Header Bar (matching PLMS pea.co.th style) */}
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white dark:bg-slate-900 rounded-xl max-w-4xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[92vh]">
+        {/* 1. Modal Top Purple Header Bar */}
         <div className="bg-[#702d8a] text-white px-5 py-3.5 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-2.5">
             <Layers className="w-5 h-5 text-purple-200" />
@@ -351,39 +344,38 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
           </button>
         </div>
 
-        {/* 2. Modal Body Content (รายละเอียดสัญญา ต่อท้ายด้วย เอกสารแนบ) */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-slate-50/50">
-          {/* แถบเตือนกรณีสถานะรอแก้ไขข้อมูล พร้อมแสดงหมายเหตุว่าแต่ละไฟล์ต้องแก้ตรงไหน */}
+        {/* 2. Modal Body Content */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 bg-slate-50/50 dark:bg-slate-950/50">
+          {/* แถบเตือนกรณีสถานะรอแก้ไขข้อมูล */}
           {consumer.contractStatus === 'needs_revision' && (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 space-y-2 shadow-xs animate-in fade-in">
-              <div className="flex items-center gap-2 font-bold text-xs text-rose-800">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900 text-rose-900 dark:text-rose-200 space-y-2 shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-xs text-rose-800 dark:text-rose-300">
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
                 <span>สัญญานี้อยู่ในสถานะ "รอแก้ไขข้อมูล" (นำเข้าข้อมูลไม่ถูกต้อง)</span>
               </div>
               {consumer.contractDetails?.reviewNotes && (
-                <div className="text-xs text-rose-700 bg-white/80 p-2.5 rounded-lg border border-rose-200 font-medium">
+                <div className="text-xs text-rose-700 dark:text-rose-300 bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-lg border border-rose-200 dark:border-rose-800 font-medium">
                   <strong>บันทึกความเห็นภาพรวม:</strong> {consumer.contractDetails.reviewNotes}
                 </div>
               )}
 
-              {/* สรุปจุดที่ต้องแก้ไขในแต่ละไฟล์เพื่อให้คนแก้รู้ว่าต้องแก้ตรงไหน */}
               {fileList.filter((f) => f.needsRevision || f.revisionNote).length > 0 && (
-                <div className="bg-white/95 p-3 rounded-lg border border-rose-200 space-y-2">
-                  <div className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                <div className="bg-white/95 dark:bg-slate-900/95 p-3 rounded-lg border border-rose-200 dark:border-rose-800 space-y-2">
+                  <div className="text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                     <span>รายการไฟล์แนบที่ผู้ตรวจระบุจุดที่ต้องแก้ไข ({fileList.filter((f) => f.needsRevision || f.revisionNote).length} ไฟล์):</span>
                   </div>
                   <div className="space-y-1.5 pl-1">
                     {fileList
                       .filter((f) => f.needsRevision || f.revisionNote)
                       .map((rf) => (
-                        <div key={rf.id} className="text-xs bg-rose-50/70 p-2 rounded-lg border border-rose-200">
-                          <div className="font-bold text-rose-950 flex items-center gap-1.5 flex-wrap">
+                        <div key={rf.id} className="text-xs bg-rose-50/70 dark:bg-rose-950/50 p-2 rounded-lg border border-rose-200 dark:border-rose-800">
+                          <div className="font-bold text-rose-950 dark:text-rose-200 flex items-center gap-1.5 flex-wrap">
                             <span>📄 {rf.fileName}</span>
-                            <span className="text-[10px] bg-rose-200 text-rose-900 px-1.5 py-0.2 rounded font-medium">({rf.fileCategory})</span>
+                            <span className="text-[10px] bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-200 px-1.5 py-0.2 rounded font-medium">({rf.fileCategory})</span>
                           </div>
-                          <div className="text-xs text-rose-700 mt-1 pl-2 border-l-2 border-rose-400">
-                            <strong className="text-rose-900">หมายเหตุจุดที่ต้องแก้ไข: </strong>
+                          <div className="text-xs text-rose-700 dark:text-rose-300 mt-1 pl-2 border-l-2 border-rose-400">
+                            <strong className="text-rose-900 dark:text-rose-200">หมายเหตุจุดที่ต้องแก้ไข: </strong>
                             <span>{rf.revisionNote || 'ข้อมูลไม่ถูกต้อง กรุณาแก้ไข'}</span>
                           </div>
                         </div>
@@ -392,72 +384,72 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 </div>
               )}
 
-              <p className="text-[11px] text-rose-600 pt-0.5">
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 pt-0.5">
                 เมื่อท่านแก้ไขข้อมูลรายละเอียดสัญญาและเอกสารแนบเรียบร้อยแล้ว ให้กดปุ่ม <strong>"ยืนยันการแก้ไข (ส่งไปรอตรวจสอบ)"</strong> ด้านล่าง ระบบจะเปลี่ยนสถานะเป็น "รอตรวจสอบไฟล์สัญญา" ทันที
               </p>
             </div>
           )}
 
           {/* ส่วนที่ 1: รายละเอียดสัญญา */}
-          <div className="space-y-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
-            <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+          <div className="space-y-4 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <div className="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#702d8a]" />
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-[#702d8a] dark:text-purple-400" />
                   <span>ส่วนที่ 1: ข้อมูลผู้ใช้ไฟฟ้าและข้อกำหนดสัญญา กฟภ.</span>
                 </h4>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   กรอกหรือแก้ไขข้อมูลการจำหน่ายไฟฟ้า พิกัดหม้อแปลง แรงดัน และอำนาจลงนาม
                 </p>
               </div>
-              <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-purple-50 text-[#702d8a] border border-purple-200">
+              <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-[#702d8a] dark:text-purple-300 border border-purple-200 dark:border-purple-800">
                 CA: {accountNumber}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* 1. กฟฟ. (drop down เลือก การไฟฟ้า) */}
+              {/* 1. กฟฟ. */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   กฟฟ. (การไฟฟ้า) <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={utility}
                   onChange={(e) => handleUtilityChange(e.target.value as PEABranch)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none"
                 >
                   {PEA_BRANCHES.map((b) => (
-                    <option key={b.code} value={b.name}>
+                    <option key={b.code} value={b.name} className="dark:bg-slate-900">
                       {b.name} ({b.code})
                     </option>
                   ))}
                 </select>
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  รหัสการไฟฟ้า: <span className="font-mono font-semibold text-purple-700">{utilityCode}</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+                  รหัสการไฟฟ้า: <span className="font-mono font-semibold text-purple-700 dark:text-purple-400">{utilityCode}</span>
                 </span>
               </div>
 
-              {/* 2. แรงดัน (drop down เลือก 22-33 kV กับ 115 kV) */}
+              {/* 2. แรงดัน */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   แรงดัน (Voltage Level) <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={voltageLevel}
                   onChange={(e) => setVoltageLevel(e.target.value as VoltageLevel)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none font-mono font-medium text-slate-800"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none font-mono font-medium text-slate-800 dark:text-slate-200"
                 >
-                  <option value="22-33 kV">22-33 kV (แรงดัน 22-33 kV)</option>
-                  <option value="115 kV">115 kV (แรงดัน 115 kV)</option>
+                  <option value="22-33 kV" className="dark:bg-slate-900">22-33 kV (แรงดัน 22-33 kV)</option>
+                  <option value="115 kV" className="dark:bg-slate-900">115 kV (แรงดัน 115 kV)</option>
                 </select>
-                <span className="text-[11px] text-slate-400 mt-1 block">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
                   พิกัดระบบจำหน่าย/สายส่งไฟฟ้า กฟภ.
                 </span>
               </div>
 
               {/* 3. ขนาดหม้อแปลง */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   ขนาดหม้อแปลง (Transformer Size) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -465,13 +457,13 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   value={transformerSize}
                   onChange={(e) => setTransformerSize(e.target.value)}
                   placeholder="เช่น 1,000 kVA, 2,500 kVA"
-                  className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none"
                 />
               </div>
 
               {/* 4. หมายเลขผู้ใช้ไฟฟ้า */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   หมายเลขผู้ใช้ไฟฟ้า (CA) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -479,13 +471,13 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   value={accountNumber}
                   onChange={(e) => setAccountNumber(e.target.value)}
                   placeholder="เช่น 020014892120"
-                  className="w-full px-3 py-2 text-sm font-mono font-bold text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm font-mono font-bold text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none"
                 />
               </div>
 
               {/* 5. ชื่อผู้ใช้ไฟฟ้า */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่อผู้ใช้ไฟฟ้า (ชื่อสถานประกอบการ / บุคคล) <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -493,13 +485,13 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   value={consumerName}
                   onChange={(e) => setConsumerName(e.target.value)}
                   placeholder="เช่น บริษัท สยาม ออโตโมทีฟ พาร์ทส์ จำกัด"
-                  className="w-full px-3 py-2 text-sm font-medium text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm font-medium text-slate-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none"
                 />
               </div>
 
               {/* 6. เลขที่สัญญา */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   เลขที่สัญญา <span className="text-rose-500">*</span>
                 </label>
                 <input
@@ -507,44 +499,42 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   value={contractNumber}
                   onChange={(e) => setContractNumber(e.target.value)}
                   placeholder="เช่น PPA-PEA-H01101/0114"
-                  className="w-full px-3 py-2 text-sm font-mono font-semibold text-purple-900 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm font-mono font-semibold text-purple-900 dark:text-purple-300 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none"
                 />
               </div>
 
               {/* 7. วันที่ลงนาม */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   วันที่ลงนาม <span className="text-rose-500">*</span>
                 </label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={contractDate}
-                    onChange={(e) => setContractDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none font-medium"
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={contractDate}
+                  onChange={(e) => setContractDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none font-medium"
+                />
               </div>
 
-              {/* 8. อำนาจ (drop down เลือก ผจก. อฝ.สบ. ผชก.) พร้อมเกณฑ์หม้อแปลง */}
+              {/* 8. อำนาจ */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     อำนาจ (ผู้มีอำนาจลงนาม กฟภ.) <span className="text-rose-500">*</span>
                   </label>
                   {signingAuthority === recommendedAuthority ? (
-                    <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       ตรงตามเกณฑ์หม้อแปลง ({recommendedAuthority})
                     </span>
                   ) : (
                     <button
                       type="button"
                       onClick={() => setSigningAuthority(recommendedAuthority)}
-                      className="text-[11px] text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200 transition-colors font-medium flex items-center gap-1 cursor-pointer"
+                      className="text-[11px] text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-200 bg-purple-50 dark:bg-purple-950/60 hover:bg-purple-100 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800 transition-colors font-medium flex items-center gap-1 cursor-pointer"
                       title="กดเพื่อใช้อำนาจตามเกณฑ์ขนาดหม้อแปลงและแรงดัน"
                     >
-                      <Zap className="w-3 h-3 text-purple-600" />
+                      <Zap className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                       ใช้อำนาจตามเกณฑ์ ({recommendedAuthority})
                     </button>
                   )}
@@ -553,57 +543,56 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 <select
                   value={signingAuthority}
                   onChange={(e) => setSigningAuthority(e.target.value as SigningAuthority)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none font-semibold text-purple-900"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 text-purple-900 dark:text-purple-200 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none font-semibold"
                 >
                   {SIGNING_AUTHORITIES.map((auth) => (
-                    <option key={auth.value} value={auth.value}>
+                    <option key={auth.value} value={auth.value} className="dark:bg-slate-900">
                       {auth.label} - {auth.desc}
                     </option>
                   ))}
                 </select>
 
-                {/* กล่องอธิบายเกณฑ์หม้อแปลง */}
-                <div className="p-2.5 rounded-lg bg-slate-100/80 border border-slate-200 text-[11px] text-slate-600 space-y-1">
-                  <div className="font-semibold text-slate-800 flex items-center gap-1">
-                    <Shield className="w-3.5 h-3.5 text-purple-600" />
+                <div className="p-2.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                    <Shield className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                     <span>เกณฑ์กำหนดอำนาจ: 22 kV ≤ 2,500 kVA (ผจก.) | 22 kV &gt; 2,500 kVA (อฝ.สบ.) | 115 kV (ผชก.)</span>
                   </div>
-                  <div className="text-slate-500">
-                    ข้อมูลผู้ใช้ไฟ: แรงดัน <strong>{consumer.voltageLevel}</strong> | ขนาดหม้อแปลง <strong>{consumer.transformerSize}</strong> → เกณฑ์แนะนำ: <strong className="text-purple-800">{recommendedAuthority}</strong>
+                  <div className="text-slate-500 dark:text-slate-400">
+                    ข้อมูลผู้ใช้ไฟ: แรงดัน <strong>{consumer.voltageLevel}</strong> | หม้อแปลง <strong>{consumer.transformerSize}</strong> → เกณฑ์แนะนำ: <strong className="text-purple-800 dark:text-purple-300">{recommendedAuthority}</strong>
                   </div>
                 </div>
               </div>
 
-              {/* ประเภทสัญญา (มี 7 ประเภทตามข้อกำหนด) */}
+              {/* ประเภทสัญญา */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   ประเภทสัญญา <span className="text-rose-500">*</span>
                 </label>
                 <select
                   value={contractType}
                   onChange={(e) => setContractType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none font-medium text-slate-900"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none font-medium text-slate-900 dark:text-slate-100"
                 >
                   {CONTRACT_TYPES.map((type) => (
-                    <option key={type} value={type}>
+                    <option key={type} value={type} className="dark:bg-slate-900">
                       {type}
                     </option>
                   ))}
                 </select>
-                <span className="text-[11px] text-slate-400 mt-1 block">
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
                   ประเภทสัญญาซื้อขายไฟฟ้า กฟภ.
                 </span>
               </div>
 
-              {/* สถานะสัญญา (ขึ้นอัตโนมัติตามสถานะเอกสารจริง ไม่ให้เลือก) */}
+              {/* สถานะสัญญา */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
                   <span>สถานะสัญญา</span>
-                  <span className="text-[10px] font-medium text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200">
+                  <span className="text-[10px] font-medium text-purple-800 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/80 px-1.5 py-0.5 rounded border border-purple-200 dark:border-purple-800">
                     ขึ้นอัตโนมัติ
                   </span>
                 </label>
-                <div className="w-full px-3 py-2 text-sm bg-slate-100 border border-slate-300 rounded-lg flex items-center justify-between shadow-2xs">
+                <div className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg flex items-center justify-between shadow-2xs">
                   <div className="flex items-center gap-2">
                     <span
                       className={`w-2.5 h-2.5 rounded-full ${
@@ -618,11 +607,11 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                           : 'bg-slate-400'
                       }`}
                     />
-                    <span className="font-semibold text-slate-800 text-xs">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
                       {getStatusLabel(autoStatus)}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-500">
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
                     {fileList.length === 0
                       ? 'ยังไม่แนบไฟล์'
                       : `แนบ ${fileList.length} ไฟล์ (${fileList.filter((f) => f.isVerified).length} ตรวจแล้ว)`}
@@ -632,7 +621,7 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
 
               {/* สถานที่ใช้ไฟฟ้า */}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   สถานที่ใช้ไฟฟ้า (ที่อยู่ติดตั้ง)
                 </label>
                 <input
@@ -640,15 +629,14 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   placeholder="เช่น นิคมอุตสาหกรรมมาบตาพุด อ.เมือง จ.ระยอง"
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white outline-none"
+                  className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-purple-400 focus:bg-white dark:focus:bg-slate-900 outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* ส่วนที่ 2: เอกสารแนบ (ต่อท้ายรายละเอียดสัญญาตามข้อ 4) */}
-          <div className="space-y-3 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
-            {/* Purple Section Header with Green "+ เพิ่มเอกสาร" Button */}
+          {/* ส่วนที่ 2: เอกสารแนบ */}
+          <div className="space-y-3 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
             <div className="bg-[#702d8a] px-4 py-3 rounded-lg flex items-center justify-between text-white shadow-xs">
               <div className="flex items-center gap-2">
                 <Paperclip className="w-4 h-4 text-purple-200" />
@@ -667,9 +655,9 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
             </div>
 
             {/* Data Table */}
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100/90 text-slate-700 font-semibold border-b border-slate-200">
+                <thead className="bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 font-semibold border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="py-2.5 px-4 font-semibold">หัวข้อเอกสาร</th>
                     <th className="py-2.5 px-4 font-semibold">ชื่อไฟล์</th>
@@ -679,54 +667,53 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                     <th className="py-2.5 px-3 font-semibold text-center whitespace-nowrap">การจัดการ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {fileList.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                      <td colSpan={6} className="py-8 text-center text-slate-400 dark:text-slate-500 font-medium">
                         ยังไม่มีเอกสารแนบ คลิกปุ่ม "+ เพิ่มเอกสาร" ด้านบนเพื่อแนบไฟล์สัญญา
                       </td>
                     </tr>
                   ) : (
                     fileList.map((file) => (
-                      <tr key={file.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-2.5 px-4 font-medium text-slate-800">
+                      <tr key={file.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="py-2.5 px-4 font-medium text-slate-800 dark:text-slate-200">
                           <div className="flex items-start gap-2">
-                            <FileText className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+                            <FileText className="w-4 h-4 text-purple-700 dark:text-purple-400 shrink-0 mt-0.5" />
                             <div className="flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-semibold text-slate-900">{file.fileCategory}</span>
+                                <span className="font-semibold text-slate-900 dark:text-white">{file.fileCategory}</span>
                                 {file.fileCategory === 'สัญญาแนบท้าย' && (
-                                  <span className="text-[10px] bg-purple-100 text-[#702d8a] px-1.5 py-0.5 rounded font-bold">
+                                  <span className="text-[10px] bg-purple-100 dark:bg-purple-950/80 text-[#702d8a] dark:text-purple-300 px-1.5 py-0.5 rounded font-bold border border-purple-200 dark:border-purple-800">
                                     แนบท้าย
                                   </span>
                                 )}
                                 {(file.needsRevision || file.revisionNote) && (
-                                  <span className="text-[10px] bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
-                                    <AlertTriangle className="w-3 h-3 text-rose-600" />
+                                  <span className="text-[10px] bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 animate-pulse">
+                                    <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                                     ต้องแก้ไข
                                   </span>
                                 )}
                                 {file.isVerified && (
-                                  <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                     ตรวจแล้ว
                                   </span>
                                 )}
                               </div>
                               {file.fileDetails && (
-                                <span className="text-[11px] text-purple-900 block font-medium mt-0.5">
+                                <span className="text-[11px] text-purple-900 dark:text-purple-300 block font-medium mt-0.5">
                                   {file.fileDetails}
                                 </span>
                               )}
 
-                              {/* แสดงหมายเหตุสิ่งที่ต้องแก้ไขให้ชัดเจน เพื่อให้คนแก้รู้ว่าต้องแก้ตรงไหน */}
                               {(file.needsRevision || file.revisionNote) && (
-                                <div className="mt-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1 shadow-2xs">
-                                  <div className="font-bold text-rose-900 flex items-center gap-1.5">
-                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                <div className="mt-2 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-xs text-rose-900 dark:text-rose-200 space-y-1 shadow-2xs">
+                                  <div className="font-bold text-rose-900 dark:text-rose-300 flex items-center gap-1.5">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
                                     <span>หมายเหตุจุดที่ต้องแก้ไข:</span>
                                   </div>
-                                  <p className="text-xs text-rose-800 pl-5 font-normal leading-relaxed">
+                                  <p className="text-xs text-rose-800 dark:text-rose-300 pl-5 font-normal leading-relaxed">
                                     {file.revisionNote || 'ข้อมูลหรือเอกสารไม่ถูกต้อง กรุณาแก้ไขและแนบไฟล์ใหม่'}
                                   </p>
                                 </div>
@@ -734,20 +721,20 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                             </div>
                           </div>
                         </td>
-                        <td className="py-2.5 px-4 text-slate-600 font-mono text-[11px] truncate max-w-[200px]" title={file.fileName}>
+                        <td className="py-2.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-[11px] truncate max-w-[200px]" title={file.fileName}>
                           {file.fileName}
                         </td>
-                        <td className="py-2.5 px-3 text-center text-slate-600 font-mono">
+                        <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400 font-mono">
                           {file.fileSize}
                         </td>
-                        <td className="py-2.5 px-3 text-center text-slate-600 font-mono">
+                        <td className="py-2.5 px-3 text-center text-slate-600 dark:text-slate-400 font-mono">
                           {file.pageCount || '-'}
                         </td>
                         <td className="py-2.5 px-3 text-center">
                           <button
                             type="button"
                             onClick={() => handleDownloadFile(file.fileName)}
-                            className="inline-flex items-center justify-center p-1 text-sky-600 hover:text-sky-800 hover:bg-sky-50 rounded transition-colors cursor-pointer"
+                            className="inline-flex items-center justify-center p-1 text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 hover:bg-sky-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                             title="ดาวน์โหลดไฟล์"
                           >
                             <Download className="w-4 h-4" />
@@ -760,17 +747,17 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                               onClick={() => handleToggleVerify(file.id)}
                               className={`p-1 rounded text-xs transition-colors cursor-pointer ${
                                 file.isVerified
-                                  ? 'text-emerald-700 hover:bg-emerald-50'
-                                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                                  ? 'text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800'
+                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                               }`}
                               title={file.isVerified ? 'ตรวจแล้ว' : 'กดเพื่อยืนยันการตรวจสอบ'}
                             >
-                              <CheckCircle2 className={`w-4 h-4 ${file.isVerified ? 'text-emerald-600 fill-emerald-50' : ''}`} />
+                              <CheckCircle2 className={`w-4 h-4 ${file.isVerified ? 'text-emerald-600 dark:text-emerald-400 fill-emerald-50 dark:fill-emerald-950' : ''}`} />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleRemoveFile(file.id)}
-                              className="p-1 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                              className="p-1 text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                               title="ลบไฟล์เอกสาร"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -784,28 +771,27 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
               </table>
             </div>
 
-            {/* Table Footer info matching PLMS */}
-            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-[11px] text-slate-500">
+            {/* Table Footer info */}
+            <div className="px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
               <span>
                 เอกสารแนบทั้งหมด {fileList.length} รายการ (ตรวจสอบแล้ว {fileList.filter((f) => f.isVerified).length} รายการ)
               </span>
-              <span className="text-[10px] text-purple-700 font-semibold">
+              <span className="text-[10px] text-purple-700 dark:text-purple-300 font-semibold">
                 * สามารถแนบได้ทั้ง สัญญาหลัก และ สัญญาแนบท้าย
               </span>
             </div>
           </div>
         </div>
 
-        {/* 4. Modal Bottom Footer (Matching screenshot with Red "✖ ปิด" button) */}
-        <div className="bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-between">
-          <div className="text-xs text-slate-500 hidden sm:flex items-center gap-2">
-            <span className="font-semibold text-slate-700">{utility} ({utilityCode})</span>
+        {/* 4. Modal Bottom Footer */}
+        <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-5 py-3 flex items-center justify-between">
+          <div className="text-xs text-slate-500 dark:text-slate-400 hidden sm:flex items-center gap-2">
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{utility} ({utilityCode})</span>
             <span>·</span>
-            <span>อำนาจลงนาม: <strong className="text-[#702d8a]">{signingAuthority}</strong></span>
+            <span>อำนาจลงนาม: <strong className="text-[#702d8a] dark:text-purple-300">{signingAuthority}</strong></span>
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            {/* Red Close Button as in screenshot: [✖ ปิด] */}
             <button
               type="button"
               onClick={onClose}
@@ -815,7 +801,6 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
               <span>ปิด</span>
             </button>
 
-            {/* Save Button */}
             <button
               type="button"
               onClick={handleSave}
@@ -841,11 +826,10 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
         </div>
       </div>
 
-      {/* 5. POPUP MODAL: "บันทึกข้อมูล" (ตรงตามภาพตัวอย่างหน้าต่างเพิ่มเอกสารของระบบ PLMS ทุกประการ แต่ไม่มี อื่น ๆ) */}
+      {/* 5. POPUP MODAL: "บันทึกข้อมูล" */}
       {isAddingDoc && (
         <div className="fixed inset-0 z-70 bg-black/60 backdrop-blur-2xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-300 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col">
-            {/* Top Purple Header Bar: บันทึกข้อมูล */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-300 dark:border-slate-700 w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col">
             <div className="bg-[#702d8a] text-white px-5 py-3 flex items-center justify-between shadow-xs">
               <span className="text-base font-bold tracking-tight">
                 บันทึกข้อมูล
@@ -860,22 +844,21 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
               </button>
             </div>
 
-            {/* Form Fields matching the screenshot */}
             <form onSubmit={handleAddFile} className="p-6 space-y-4 text-xs">
-              {/* Field 1: หัวข้อเอกสาร (มีแค่สัญญาหลัก กับ สัญญาแนบท้ายเท่านั้น) : */}
+              {/* Field 1: หัวข้อเอกสาร */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="sm:w-28 text-slate-800 font-semibold sm:text-right shrink-0">
+                <label className="sm:w-28 text-slate-800 dark:text-slate-200 font-semibold sm:text-right shrink-0">
                   หัวข้อเอกสาร :
                 </label>
                 <div className="flex-1 relative">
                   <select
                     value={newDocTitle}
                     onChange={(e) => setNewDocTitle(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-[#702d8a] focus:ring-1 focus:ring-[#702d8a] bg-white text-slate-900 font-semibold"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:border-[#702d8a] focus:ring-1 focus:ring-[#702d8a] bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-semibold"
                     required
                   >
                     {ATTACHMENT_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
+                      <option key={cat} value={cat} className="dark:bg-slate-900">
                         {cat}
                       </option>
                     ))}
@@ -883,9 +866,9 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 </div>
               </div>
 
-              {/* Field 2: รายละเอียด : */}
+              {/* Field 2: รายละเอียด */}
               <div className="flex flex-col sm:flex-row sm:items-start gap-2">
-                <label className="sm:w-28 text-slate-800 font-semibold sm:text-right shrink-0 sm:pt-2">
+                <label className="sm:w-28 text-slate-800 dark:text-slate-200 font-semibold sm:text-right shrink-0 sm:pt-2">
                   รายละเอียด :{' '}
                   {newDocTitle === 'สัญญาแนบท้าย' && (
                     <span className="text-rose-500 font-bold">*</span>
@@ -904,20 +887,20 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                         ? 'บังคับระบุ: สัญญาแนบท้ายเรื่องใด (เช่น สัญญาแนบท้ายเพิ่มขนาดหม้อแปลง, ลดขนาดหม้อแปลง, สำรองฉุกเฉิน ฯลฯ)...'
                         : 'ระบุรายละเอียดเพิ่มเติมเกี่ยวกับเอกสาร...'
                     }
-                    className={`w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-1 bg-white text-slate-900 resize-none ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-1 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 resize-none ${
                       docError && newDocTitle === 'สัญญาแนบท้าย' && !newDocDescription.trim()
                         ? 'border-rose-500 focus:border-rose-500 focus:ring-rose-500 bg-rose-50/20'
-                        : 'border-slate-300 focus:border-[#702d8a] focus:ring-[#702d8a]'
+                        : 'border-slate-300 dark:border-slate-700 focus:border-[#702d8a] focus:ring-[#702d8a]'
                     }`}
                     required={newDocTitle === 'สัญญาแนบท้าย'}
                   />
                   {newDocTitle === 'สัญญาแนบท้าย' && (
-                    <p className="text-[11px] text-purple-700 font-medium">
+                    <p className="text-[11px] text-purple-700 dark:text-purple-300 font-medium">
                       * บังคับระบุรายละเอียด ว่าเป็นสัญญาแนบท้ายเรื่องใด
                     </p>
                   )}
                   {docError && (
-                    <p className="text-xs text-rose-600 font-semibold flex items-center gap-1">
+                    <p className="text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" />
                       <span>{docError}</span>
                     </p>
@@ -925,11 +908,10 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                 </div>
               </div>
 
-              {/* Field 3: Row with จำนวนหน้า : & ไฟล์เอกสาร : */}
+              {/* Field 3: จำนวนหน้า & ไฟล์เอกสาร */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 pt-1">
-                {/* จำนวนหน้า : with [-] [1] [+] Stepper */}
                 <div className="flex items-center gap-2 sm:ml-[7.5rem]">
-                  <label className="text-slate-800 font-semibold whitespace-nowrap">
+                  <label className="text-slate-800 dark:text-slate-200 font-semibold whitespace-nowrap">
                     จำนวนหน้า :
                   </label>
                   <div className="inline-flex items-center">
@@ -947,7 +929,7 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                       max={999}
                       value={newDocPageCount}
                       onChange={(e) => setNewDocPageCount(Math.max(1, Number(e.target.value)))}
-                      className="w-14 h-8 border-y border-slate-300 text-center font-mono text-sm font-semibold outline-none bg-white text-slate-900"
+                      className="w-14 h-8 border-y border-slate-300 dark:border-slate-700 text-center font-mono text-sm font-semibold outline-none bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     />
                     <button
                       type="button"
@@ -960,9 +942,8 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                   </div>
                 </div>
 
-                {/* ไฟล์เอกสาร : with [📄 แนบไฟล์] Button */}
                 <div className="flex items-center gap-2">
-                  <label className="text-slate-800 font-semibold whitespace-nowrap">
+                  <label className="text-slate-800 dark:text-slate-200 font-semibold whitespace-nowrap">
                     ไฟล์เอกสาร :
                   </label>
                   <input
@@ -981,21 +962,19 @@ export const ContractUploadModal: React.FC<ContractUploadModalProps> = ({
                     <span>แนบไฟล์</span>
                   </button>
                   {newDocFileName ? (
-                    <span className="font-mono text-[11px] text-purple-900 bg-purple-50 px-2 py-1 rounded border border-purple-200 truncate max-w-[180px]" title={newDocFileName}>
+                    <span className="font-mono text-[11px] text-purple-900 dark:text-purple-200 bg-purple-50 dark:bg-purple-950/80 px-2 py-1 rounded border border-purple-200 dark:border-purple-800 truncate max-w-[180px]" title={newDocFileName}>
                       {newDocFileName}
                     </span>
                   ) : (
-                    <span className="text-[11px] text-slate-400 italic">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 italic">
                       (เลือกไฟล์จากเครื่อง)
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* หมายเหตุ: ไม่มีส่วน "อื่น ๆ" ตามคำสั่งผู้ใช้ */}
-
-              {/* Bottom Footer Buttons matching screenshot: [✔ บันทึก] [✖ ปิด] */}
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
+              {/* Bottom Footer Buttons */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end gap-2">
                 <button
                   type="submit"
                   className="bg-[#702d8a] hover:bg-[#5a1e70] text-white font-semibold text-xs px-4 py-2 rounded transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"

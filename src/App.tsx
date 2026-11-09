@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Sidebar, MainNavTab } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -33,6 +33,41 @@ import { exportToCSV, getStatusLabel } from './utils/formatters';
 export default function App() {
   const [consumers, setConsumers] = useState<ElectricityConsumer[]>(INITIAL_CONSUMERS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+
+  // Theme state (สลับโหมดขาว - ดำ / Light - Dark Mode)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('pea-plms-theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('pea-plms-theme', theme);
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => {
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
+      setToast({
+        id: `toast-theme-${Date.now()}`,
+        title: nextTheme === 'dark' ? '🌙 เปลี่ยนเป็นโหมดมืด (Dark Mode)' : '☀️ เปลี่ยนเป็นโหมดสว่าง (Light Mode)',
+        message: nextTheme === 'dark' ? 'สลับการแสดงผลหน้าจอเป็นโทนสีมืดสบายตา' : 'สลับการแสดงผลหน้าจอเป็นโทนสีสว่างคมชัด',
+        type: 'info',
+      });
+      return nextTheme;
+    });
+  };
 
   // Main Navigation Tab (Left Sidebar)
   // 1. Dashboard สถานะสัญญาซื้อขายไฟฟ้า
@@ -637,8 +672,8 @@ export default function App() {
   const pendingCount = consumers.filter((c) => c.contractStatus === 'pending_review').length;
 
   return (
-    <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-['Prompt','Plus_Jakarta_Sans',sans-serif]">
-      {/* 1. Header with Brand, Logo, Title, and User Profile / Role Switcher */}
+    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-['Prompt','Plus_Jakarta_Sans',sans-serif] transition-colors duration-200">
+      {/* 1. Header with Brand, Logo, Title, Theme Switcher, and User Profile / Role Switcher */}
       <Header
         notifications={notifications}
         onOpenNotifications={() => setIsNotificationOpen(true)}
@@ -662,6 +697,8 @@ export default function App() {
           });
         }}
         onToggleSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Layout: Left Sidebar + Right Content Area */}
@@ -710,19 +747,19 @@ export default function App() {
           {currentNavTab === 'registry' && (
             <div className="space-y-5">
               {/* Registry Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-sky-100 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-sky-100 dark:border-slate-800 shadow-xs">
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                     ทะเบียนสัญญาซื้อขายไฟฟ้า
                   </h1>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                     ศูนย์รวมข้อมูลสัญญาผู้ใช้ไฟฟ้ารายใหญ่ การไฟฟ้าส่วนภูมิภาค (กฟภ.) ค้นหา กรองสถานะ และตรวจรับไฟล์สัญญา
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="text-xs font-semibold px-3 py-1 bg-sky-50 text-sky-700 rounded-full border border-sky-200">
-                    ทั้งหมด {consumers.length} รายการ
+                  <span className="text-xs font-semibold px-3 py-1 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 rounded-full border border-sky-200 dark:border-sky-800">
+                    ทั้งหมด {consumers.length} สัญญา
                   </span>
                 </div>
               </div>
