@@ -25,8 +25,9 @@ export const PEA_BRANCHES: { name: PEABranch; code: string; province: string }[]
 export type VoltageLevel = '22-33 kV' | '115 kV';
 export const VOLTAGE_LEVELS: VoltageLevel[] = ['22-33 kV', '115 kV'];
 
-// ประเภทสัญญาตามข้อกำหนด มี 7 ประเภทหลัก และ 1 ประเภทสำหรับข้อมูลนำเข้าจาก SAP
+// ประเภทสัญญาตามข้อกำหนด มี 7 ประเภทหลัก และตัวเลือกข้อมูลนำเข้าจาก SAP (อยู่บนสุด)
 export const CONTRACT_TYPES = [
+  'รอตรวจสอบและระบุประเภทสัญญา (ข้อมูลจากระบบ SAP)',
   'สัญญาหลัก',
   'สัญญาแนบท้ายเพิ่มขนาดหม้อแปลง',
   'สัญญาแนบท้ายลดขนาดหม้อแปลง',
@@ -34,7 +35,6 @@ export const CONTRACT_TYPES = [
   'สัญญาแนบท้ายไฟสำรอง',
   'สัญญาแนบท้ายเปลี่ยนแปลงชื่อ',
   'สัญญาแนบท้ายกรณีใช้ไฟฟ้าวงจร 115 สำรองฉุกเฉิน 115',
-  'รอตรวจสอบและระบุประเภทสัญญา (ข้อมูลจากระบบ SAP)',
 ] as const;
 
 export type ContractType = typeof CONTRACT_TYPES[number];

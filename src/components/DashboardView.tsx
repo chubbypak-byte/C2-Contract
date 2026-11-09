@@ -71,10 +71,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         activeTab="ทั้งหมด"
       />
 
-      {/* 3. Grid of Analytics & Progress */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Card 1: สรุปภาพรวมความคืบหน้าการรับรองสัญญา */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
+      {/* 3. Grid of Analytics & Progress - กล่อง กฟฟ. ขนาดเท่าเดิม (4 ส่วน), กล่องสถานะย่อให้กระชับ (3 ส่วน), กล่องประเภทสัญญากว้างขึ้น (5 ส่วน) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6">
+        {/* Card 1: สถานะ (ย่อให้กระชับ กว้าง 3 ส่วน) */}
+        <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-sky-100 dark:border-slate-800">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
@@ -89,10 +89,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="mt-4 space-y-4">
               <div>
                 <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5">
-                  <span>สัญญาที่เสร็จสิ้นสมบูรณ์</span>
-                  <span className="font-bold text-slate-900 dark:text-white font-mono">{completed} จาก {total} สัญญา</span>
+                  <span>สัญญาเสร็จสิ้น</span>
+                  <span className="font-bold text-slate-900 dark:text-white font-mono">{completed}/{total} สัญญา</span>
                 </div>
-                <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
                   <div
                     className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-500"
                     style={{ width: `${completionRate}%` }}
@@ -102,8 +102,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div>
                 <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5">
-                  <span>จำนวนไฟล์สัญญาที่ตรวจแล้ว</span>
-                  <span className="font-bold text-slate-900 dark:text-white font-mono">{totalVerifiedFiles} จาก {totalAttachedFiles} ไฟล์</span>
+                  <span>ตรวจไฟล์แล้ว</span>
+                  <span className="font-bold text-slate-900 dark:text-white font-mono">{totalVerifiedFiles}/{totalAttachedFiles} ไฟล์</span>
                 </div>
                 <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
                   <div
@@ -114,23 +114,23 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             </div>
 
-            <div className="mt-5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">ความคืบหน้าการตรวจรับรองไฟล์สัญญา</span>
+            <div className="mt-4 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">ความคืบหน้าไฟล์</span>
               <span className="font-bold text-sky-700 dark:text-sky-400 font-mono text-sm">{filesVerificationRate}%</span>
             </div>
           </div>
 
           <button
             onClick={() => onGoToRegistry('รอตรวจสอบไฟล์สัญญา')}
-            className="mt-4 w-full py-2 px-3 text-xs text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-semibold rounded-xl border border-sky-200 dark:border-sky-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="mt-4 w-full py-2 px-2.5 text-xs text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-semibold rounded-xl border border-sky-200 dark:border-sky-800 transition-colors flex items-center justify-center gap-1 cursor-pointer"
           >
-            <span>ดูรายการรอตรวจในทะเบียนสัญญา</span>
+            <span>ดูรายการรอตรวจ</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Card 2: สรุปแยกตามการไฟฟ้า (PEA Branches) - จำนวนสัญญาแยกตาม กฟฟ. */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
+        {/* Card 2: จำนวนสัญญาแยกตาม กฟฟ. (ขนาดเท่าเดิม 4 ส่วน จาก 12 ส่วน = 1/3 ของแถว) */}
+        <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-sky-100 dark:border-slate-800">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
@@ -170,8 +170,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
 
-        {/* Card 3: สรุปแยกตามประเภทสัญญา (รวมตัวเลือก รอตรวจสอบและระบุประเภทสัญญา (ข้อมูลจากระบบ SAP)) */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
+        {/* Card 3: สรุปแยกตามประเภทสัญญา (ขยายกว้าง 5 ส่วน ข้อความครบถ้วน) */}
+        <div className="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-sky-100 dark:border-slate-800 p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-sky-100 dark:border-slate-800">
               <h3 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
@@ -189,27 +189,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 return (
                   <div
                     key={idx}
-                    className={`flex items-center justify-between p-2 rounded-lg ${
+                    className={`flex items-center justify-between p-2.5 rounded-xl transition-colors ${
                       isSAP
-                        ? 'bg-purple-50/70 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800'
-                        : 'bg-slate-50 dark:bg-slate-800/80 border border-transparent'
+                        ? 'bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 shadow-2xs'
+                        : 'bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800/60 hover:border-slate-200 dark:hover:border-slate-700'
                     }`}
                   >
+                    <div className="flex items-center gap-2 min-w-0 pr-3">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${isSAP ? 'bg-purple-600 animate-pulse' : 'bg-sky-500'}`}></span>
+                      <span
+                        className={`text-xs leading-snug whitespace-normal break-words ${
+                          isSAP
+                            ? 'font-bold text-purple-950 dark:text-purple-200'
+                            : 'font-medium text-slate-800 dark:text-slate-200'
+                        }`}
+                      >
+                        {type}
+                      </span>
+                    </div>
+
                     <span
-                      className={`truncate max-w-[210px] ${
+                      className={`font-bold font-mono px-2.5 py-1 rounded-full text-xs border shrink-0 ${
                         isSAP
-                          ? 'font-medium text-purple-900 dark:text-purple-300'
-                          : 'text-slate-700 dark:text-slate-300'
-                      }`}
-                      title={type}
-                    >
-                      {type}
-                    </span>
-                    <span
-                      className={`font-bold font-mono px-2 py-0.5 rounded-full text-[11px] border shrink-0 ${
-                        isSAP
-                          ? 'text-purple-800 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/60 border-purple-300 dark:border-purple-700'
-                          : 'text-sky-700 dark:text-sky-400 bg-sky-100 dark:bg-sky-950 border-sky-200 dark:border-sky-800'
+                          ? 'text-purple-900 dark:text-purple-200 bg-purple-100 dark:bg-purple-900/60 border-purple-300 dark:border-purple-700'
+                          : 'text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-950 border-sky-200 dark:border-sky-800'
                       }`}
                     >
                       {count} สัญญา
