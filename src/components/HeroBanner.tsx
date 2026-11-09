@@ -36,12 +36,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight text-balance">
-            ศูนย์กลางจัดเก็บสัญญาและติดตามสถานะผู้ใช้ไฟฟ้ารายใหญ่
+            ระบบจัดเก็บและติดตามสถานะสัญญาซื้อขายไฟฟ้าของผู้ใช้ไฟฟ้ารายใหญ่
           </h1>
-
-          <p className="mt-2.5 text-sm sm:text-base text-sky-100/90 leading-relaxed font-light max-w-2xl">
-            ค้นหาข้อมูลการจำหน่ายไฟฟ้า พิกัดขนาดหม้อแปลง ระดับแรงดัน และตรวจรับไฟล์สัญญาซื้อขายไฟฟ้าแบบเรียลไทม์ การไฟฟ้าส่วนภูมิภาค (กฟภ.)
-          </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
