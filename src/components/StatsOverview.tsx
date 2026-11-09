@@ -26,6 +26,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 }) => {
   // แถวที่ 1: สถิติจำนวนสัญญาซื้อขายไฟฟ้า (หน่วย: สัญญา)
   const totalContracts = consumers.length;
+  const pendingUploadContracts = consumers.filter((c) => c.contractStatus === 'pending_upload').length;
   const uploadedContracts = consumers.filter((c) => c.contractStatus === 'uploaded').length;
   const pendingReviewContracts = consumers.filter((c) => c.contractStatus === 'pending_review').length;
   const needsRevisionContracts = consumers.filter((c) => c.contractStatus === 'needs_revision').length;
@@ -43,6 +44,20 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       bgGradient: 'from-sky-50 to-white dark:from-sky-950/40 dark:to-slate-900',
       borderColor: 'border-sky-200 dark:border-sky-800',
       badgeColor: 'text-sky-700 dark:text-sky-300 bg-sky-100/60 dark:bg-sky-900/60',
+    },
+    {
+      id: 'ยังไม่แนบไฟล์สัญญา',
+      title: 'ยังไม่แนบไฟล์สัญญา',
+      count: pendingUploadContracts,
+      unit: 'สัญญา',
+      subtitle: 'ยังไม่ได้อัปโหลดไฟล์สัญญาเข้าระบบ',
+      icon: FileClock,
+      accent: 'text-slate-600 dark:text-slate-400',
+      bgGradient: 'from-slate-100/80 to-white dark:from-slate-800/60 dark:to-slate-900',
+      borderColor: 'border-slate-300 dark:border-slate-700',
+      badgeColor: 'text-slate-700 dark:text-slate-300 bg-slate-200/80 dark:bg-slate-800',
+      highlight: pendingUploadContracts > 0,
+      highlightText: 'รอแนบ',
     },
     {
       id: 'แนบไฟล์แล้ว',
@@ -100,6 +115,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
   // แถวที่ 2: สถิติจำนวนไฟล์สัญญาซื้อขายไฟฟ้า (หน่วย: ไฟล์)
   // คำนวณไฟล์จริงจาก attachedFilesCount / verifiedFilesCount และ files list
   let totalFilesRequired = 0;
+  let totalFilesPendingUpload = 0;
   let totalFilesUploaded = 0;
   let totalFilesPendingReview = 0;
   let totalFilesNeedsRevision = 0;
@@ -114,6 +130,10 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     const requiredForThis = attachedCount > 0 ? attachedCount : 1;
     totalFilesRequired += requiredForThis;
     totalFilesUploaded += attachedCount;
+
+    if (c.contractStatus === 'pending_upload' || attachedCount === 0) {
+      totalFilesPendingUpload += 1;
+    }
 
     if (files && files.length > 0) {
       files.forEach((f) => {
@@ -135,8 +155,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       } else if (c.contractStatus === 'pending_review') {
         totalFilesPendingReview += Math.max(1, attachedCount - verifiedCount);
         totalFilesVerified += verifiedCount;
-      } else {
-        // uploaded
+      } else if (c.contractStatus === 'uploaded') {
         totalFilesPendingReview += attachedCount;
       }
     }
@@ -146,7 +165,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     {
       id: 'file-all',
       tabId: 'ทั้งหมด',
-      title: '4.1 จำนวนไฟล์สัญญาซื้อขายไฟฟ้าที่ต้องแนบทั้งหมด',
+      title: 'จำนวนไฟล์สัญญาซื้อขายไฟฟ้าที่ต้องแนบทั้งหมด',
       shortTitle: 'ไฟล์สัญญาที่ต้องแนบทั้งหมด',
       count: totalFilesRequired,
       unit: 'ไฟล์',
@@ -157,9 +176,24 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
       borderColor: 'border-indigo-200 dark:border-indigo-800',
     },
     {
+      id: 'file-pending-upload',
+      tabId: 'ยังไม่แนบไฟล์สัญญา',
+      title: 'รอแนบไฟล์สัญญา',
+      shortTitle: 'รอแนบไฟล์สัญญา',
+      count: totalFilesPendingUpload,
+      unit: 'ไฟล์',
+      subtitle: 'สัญญาที่ยังไม่มีการแนบไฟล์',
+      icon: FileClock,
+      accent: 'text-slate-600 dark:text-slate-400',
+      bgGradient: 'from-slate-100/80 to-white dark:from-slate-800/60 dark:to-slate-900',
+      borderColor: 'border-slate-300 dark:border-slate-700',
+      highlight: totalFilesPendingUpload > 0,
+      highlightText: 'รอแนบ',
+    },
+    {
       id: 'file-uploaded',
       tabId: 'แนบไฟล์แล้ว',
-      title: '4.2 แนบไฟล์สัญญาแล้ว',
+      title: 'แนบไฟล์สัญญาแล้ว',
       shortTitle: 'แนบไฟล์สัญญาแล้ว',
       count: totalFilesUploaded,
       unit: 'ไฟล์',
@@ -172,7 +206,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     {
       id: 'file-pending',
       tabId: 'รอตรวจสอบไฟล์สัญญา',
-      title: '4.3 รอตรวจสอบไฟล์สัญญา',
+      title: 'รอตรวจสอบไฟล์สัญญา',
       shortTitle: 'รอตรวจสอบไฟล์สัญญา',
       count: totalFilesPendingReview,
       unit: 'ไฟล์',
@@ -187,7 +221,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     {
       id: 'file-revision',
       tabId: 'รอแก้ไขข้อมูล',
-      title: '4.4 รอแก้ไขไฟล์สัญญา',
+      title: 'รอแก้ไขไฟล์สัญญา',
       shortTitle: 'รอแก้ไขไฟล์สัญญา',
       count: totalFilesNeedsRevision,
       unit: 'ไฟล์',
@@ -202,7 +236,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     {
       id: 'file-verified',
       tabId: 'เสร็จสิ้น',
-      title: '4.5 ตรวจสอบไฟล์สัญญาแล้ว',
+      title: 'ตรวจสอบไฟล์สัญญาแล้ว',
       shortTitle: 'ตรวจสอบไฟล์สัญญาแล้ว',
       count: totalFilesVerified,
       unit: 'ไฟล์',
@@ -216,7 +250,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
 
   return (
     <div id="overview-section" className="mb-8 space-y-6">
-      {/* แถวที่ 1: จำนวนสัญญาซื้อขายไฟฟ้า */}
+      {/* แถวที่ 1: จำนวนสัญญาซื้อขายไฟฟ้า (6 การ์ด) */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
@@ -233,7 +267,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {contractCards.map((card) => {
             const Icon = card.icon;
             const isActive = activeTab === card.id;
@@ -242,30 +276,32 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
               <div
                 key={card.id}
                 onClick={() => onSelectTab(card.id)}
-                className={`p-4 rounded-2xl bg-gradient-to-b ${card.bgGradient} border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md ${
+                className={`p-3.5 rounded-2xl bg-gradient-to-b ${card.bgGradient} border transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md ${
                   isActive
                     ? `${card.borderColor} ring-2 ring-sky-400 dark:ring-sky-500 bg-white dark:bg-slate-900`
                     : `${card.borderColor} hover:border-sky-300 dark:hover:border-sky-700`
                 }`}
               >
-                <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate" title={card.title}>
                     {card.title}
                   </span>
                   <div className={`p-1.5 rounded-xl bg-white dark:bg-slate-800 shadow-2xs border border-slate-100 dark:border-slate-700 ${card.accent}`}>
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
                     {card.count}
                   </span>
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.unit}</span>
                   {card.highlight && (
-                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       card.id === 'รอแก้ไขข้อมูล'
                         ? 'text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800'
+                        : card.id === 'รอแนบสัญญา'
+                        ? 'text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600'
                         : 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 animate-pulse'
                     }`}>
                       {card.highlightText || 'รอจัดการ'}
@@ -273,9 +309,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
                   )}
                 </div>
 
-                <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400">
                   <span className="truncate">{card.subtitle}</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                  <ArrowUpRight className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
                 </div>
               </div>
             );
@@ -283,7 +319,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
         </div>
       </div>
 
-      {/* แถวที่ 2: จำนวนไฟล์สัญญาซื้อขายไฟฟ้า */}
+      {/* แถวที่ 2: จำนวนไฟล์สัญญาซื้อขายไฟฟ้า (6 การ์ด) */}
       <div>
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="flex items-center gap-2">
@@ -300,7 +336,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {fileCards.map((card) => {
             const Icon = card.icon;
 
@@ -308,26 +344,28 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
               <div
                 key={card.id}
                 onClick={() => onSelectTab(card.tabId)}
-                className={`p-4 rounded-2xl bg-gradient-to-b ${card.bgGradient} border ${card.borderColor} transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700`}
+                className={`p-3.5 rounded-2xl bg-gradient-to-b ${card.bgGradient} border ${card.borderColor} transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-700`}
               >
-                <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate" title={card.title}>
                     {card.shortTitle}
                   </span>
                   <div className={`p-1.5 rounded-xl bg-white dark:bg-slate-800 shadow-2xs border border-slate-100 dark:border-slate-700 ${card.accent}`}>
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums">
                     {card.count}
                   </span>
                   <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.unit}</span>
                   {card.highlight && (
-                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                       card.id === 'file-revision'
                         ? 'text-rose-700 dark:text-rose-300 bg-rose-100 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800'
+                        : card.id === 'file-pending-upload'
+                        ? 'text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600'
                         : 'text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 animate-pulse'
                     }`}>
                       {card.highlightText || 'ต้องจัดการ'}
@@ -335,9 +373,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
                   )}
                 </div>
 
-                <div className="mt-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10.5px] text-slate-500 dark:text-slate-400">
                   <span className="truncate">{card.subtitle}</span>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                  <ArrowUpRight className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
                 </div>
               </div>
             );

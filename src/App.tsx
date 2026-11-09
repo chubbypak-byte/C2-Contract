@@ -105,6 +105,9 @@ export default function App() {
   const filteredConsumers = useMemo(() => {
     return consumers.filter((item) => {
       // 1. Tab filter
+      if (activeTab === 'ยังไม่แนบไฟล์สัญญา' && item.contractStatus !== 'pending_upload') {
+        return false;
+      }
       if (activeTab === 'แนบไฟล์แล้ว' && item.contractStatus !== 'uploaded') {
         return false;
       }
@@ -725,8 +728,11 @@ export default function App() {
             <DashboardView
               consumers={consumers}
               onGoToRegistry={(tabFilter) => {
-                if (tabFilter && (tabFilter === 'ทั้งหมด' || tabFilter === 'แนบไฟล์แล้ว' || tabFilter === 'รอตรวจสอบไฟล์สัญญา' || tabFilter === 'เสร็จสิ้น')) {
-                  setActiveTab(tabFilter as TabType);
+                if (tabFilter) {
+                  const validTabs: TabType[] = ['ทั้งหมด', 'ยังไม่แนบไฟล์สัญญา', 'แนบไฟล์แล้ว', 'รอตรวจสอบไฟล์สัญญา', 'รอแก้ไขข้อมูล', 'เสร็จสิ้น'];
+                  if (validTabs.includes(tabFilter as TabType)) {
+                    setActiveTab(tabFilter as TabType);
+                  }
                 }
                 setCurrentNavTab('registry');
                 window.scrollTo({ top: 0, behavior: 'smooth' });

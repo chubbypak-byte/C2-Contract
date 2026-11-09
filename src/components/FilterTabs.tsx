@@ -3,6 +3,7 @@ import { ElectricityConsumer } from '../types/contract';
 
 export type TabType =
   | 'ทั้งหมด'
+  | 'ยังไม่แนบไฟล์สัญญา'
   | 'แนบไฟล์แล้ว'
   | 'รอตรวจสอบไฟล์สัญญา'
   | 'รอแก้ไขข้อมูล'
@@ -21,6 +22,7 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
 }) => {
   const counts = {
     ทั้งหมด: consumers.length,
+    ยังไม่แนบไฟล์สัญญา: consumers.filter((c) => c.contractStatus === 'pending_upload').length,
     แนบไฟล์แล้ว: consumers.filter((c) => c.contractStatus === 'uploaded').length,
     รอตรวจสอบไฟล์สัญญา: consumers.filter((c) => c.contractStatus === 'pending_review').length,
     รอแก้ไขข้อมูล: consumers.filter((c) => c.contractStatus === 'needs_revision').length,
@@ -29,6 +31,7 @@ export const FilterTabs: React.FC<FilterTabsProps> = ({
 
   const tabs: { label: TabType; count: number; badgeColor?: string }[] = [
     { label: 'ทั้งหมด', count: counts['ทั้งหมด'] },
+    { label: 'ยังไม่แนบไฟล์สัญญา', count: counts['ยังไม่แนบไฟล์สัญญา'], badgeColor: counts['ยังไม่แนบไฟล์สัญญา'] > 0 ? 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300' : undefined },
     { label: 'แนบไฟล์แล้ว', count: counts['แนบไฟล์แล้ว'] },
     { label: 'รอตรวจสอบไฟล์สัญญา', count: counts['รอตรวจสอบไฟล์สัญญา'] },
     { label: 'รอแก้ไขข้อมูล', count: counts['รอแก้ไขข้อมูล'], badgeColor: counts['รอแก้ไขข้อมูล'] > 0 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300' : undefined },

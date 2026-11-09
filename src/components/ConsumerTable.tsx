@@ -143,6 +143,9 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
               <th scope="col" className="py-3 px-3 text-xs font-semibold whitespace-nowrap">
                 เลขที่สัญญา
               </th>
+              <th scope="col" className="py-3 px-3 text-xs font-semibold whitespace-nowrap text-center">
+                วันที่ลงนาม
+              </th>
               <th scope="col" className="py-3 px-4 text-xs font-semibold min-w-[220px]">
                 สถานที่ใช้ไฟฟ้า
               </th>
@@ -171,7 +174,7 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {consumers.length === 0 ? (
               <tr>
-                <td colSpan={11} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                <td colSpan={12} className="py-12 text-center text-slate-400 dark:text-slate-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <FileText className="w-8 h-8 text-slate-300 dark:text-slate-600 stroke-1" />
                     <p className="text-sm font-medium">ไม่พบข้อมูลสัญญาตามเงื่อนไขที่เลือก</p>
@@ -234,6 +237,17 @@ export const ConsumerTable: React.FC<ConsumerTableProps> = ({
                       <span className="font-semibold text-slate-800 dark:text-slate-200">
                         {item.contractDetails?.contractNumber || item.installationNumber}
                       </span>
+                    </td>
+
+                    {/* วันที่ลงนาม */}
+                    <td className="py-3.5 px-3 font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap align-middle text-center">
+                      {item.contractDetails?.contractDate || item.contractDetails?.expireDate ? (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700">
+                          {item.contractDetails?.contractDate || item.contractDetails?.expireDate}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500 text-xs">-</span>
+                      )}
                     </td>
 
                     {/* สถานที่ใช้ไฟฟ้า & ชื่อผู้ใช้ไฟฟ้า */}

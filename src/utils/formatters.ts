@@ -165,6 +165,8 @@ export function exportToCSV(data: any[], filename = 'electricity_contracts.csv')
     'รหัสการไฟฟ้า',
     'หมายเลขผู้ใช้ไฟฟ้า (CA)',
     'การติดตั้ง',
+    'เลขที่สัญญา',
+    'วันที่ลงนาม',
     'สถานที่ใช้ไฟฟ้า',
     'ขนาดหม้อแปลง',
     'แรงดัน',
@@ -172,7 +174,6 @@ export function exportToCSV(data: any[], filename = 'electricity_contracts.csv')
     'ไฟล์แนบ',
     'ตรวจแล้ว',
     'สถานะสัญญา',
-    'เลขที่สัญญา',
   ];
 
   const rows = data.map((item) => [
@@ -180,6 +181,8 @@ export function exportToCSV(data: any[], filename = 'electricity_contracts.csv')
     `"${item.utilityCode || ''}"`,
     `"${item.accountNumber || ''}"`,
     `"${item.installationNumber || ''}"`,
+    `"${item.contractDetails?.contractNumber || '-'}"`,
+    `"${item.contractDetails?.contractDate || item.contractDetails?.expireDate || '-'}"`,
     `"${(item.location || '').replace(/"/g, '""')}"`,
     `"${item.transformerSize || ''}"`,
     `"${item.voltageLevel || ''}"`,
@@ -187,7 +190,6 @@ export function exportToCSV(data: any[], filename = 'electricity_contracts.csv')
     `"${item.attachedFilesCount || 0} ไฟล์"`,
     `"${item.verifiedFilesCount || 0}/${item.attachedFilesCount || 0} ไฟล์"`,
     `"${getStatusLabel(item.contractStatus)}"`,
-    `"${item.contractDetails?.contractNumber || '-'}"`,
   ]);
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
